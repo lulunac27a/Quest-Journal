@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // --- Public handle mapping (doc id = handleLower) ---
+    match /handles/{handle} {
+      allow read: if true;
+
+      // Only the authenticated owner of uid in the document can reserve a handle.
+      allow create: if isSignedIn()
+                    && request.resource.data.uid is string
+                    && request.resource.data.uid == request.auth.uid
+                    && (
+                      request.resource.data.original is string ||
+                      request.resource.data.handle is string
+                    );
+
+      // Only the owner of the existing mapping can update or delete it.
+      allow update: if isSignedIn()
+                    && resource.data.uid is string
+                    && resource.data.uid == request.auth.uid
+                    && request.resource.data.uid == resource.data.uid;
+
+      allow delete: if isSignedIn()
+                    && resource.data.uid is string
+                    && resource.data.uid == request.auth.uid;
+    }
+
+    // --- Public profiles (hero name, XP, etc.) ---
+    match /profiles/{uid} {
+      allow read: if true;
+      // Let each user freely manage their own profile document.
+      allow write: if isOwner(uid);
+    }
+
+    // --- Optional username reservation docs (for email/password accounts) ---
+    match /usernames/{handle} {
+      allow read: if true;
+
+      // Only the owner of the username uid field may create or update.
+      allow create, update: if isSignedIn()
+                            && request.resource.data.uid is string
+                            && request.resource.data.uid == request.auth.uid;
+
+      // Allow deletes based on existing document owner (no request.resource on delete).
+      allow delete: if isSignedIn()
+                    && resource.data.uid is string
+                    && resource.data.uid == request.auth.uid;
+    }
+
+    // --- Friendships by pair id (uidA_uidB sorted) ---
+    match /friendships/{pairId} {
+      allow read: if true;
+
+      // Any participant in the friendship (a or b) may create, update, or delete.
+      allow create, update: if isSignedIn() && (
+        request.resource.data.a == request.auth.uid ||
+        request.resource.data.b == request.auth.uid
+      );
+
+      allow delete: if isSignedIn() && (
+        resource.data.a == request.auth.uid ||
+        resource.data.b == request.auth.uid
+      );
+    }
+
+    // --- User root doc (metadata, preferences, etc.) ---
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // --- Primary app state document (per-user sync blob) ---
+    match /users/{uid}/app/state {
+      allow read, write: if isOwner(uid);
+    }
+
+    // --- All other per-user subcollections (tasks_open, tasks_done, journals, quests, etc.) ---
+    match /users/{uid}/{document=**} {
+      allow read, write: if isOwner(uid);
+    }
+  }
+}

@@ -744,6 +744,98 @@ export const ACH_BLUEPRINT = [
         "description": "Maintain a 10-day streak (≥3 tasks/day)."
       }
     ]
+  },
+
+  // Journal (life — streak + total words)
+  {
+    "type": "journal",
+    "items": [
+      {
+        "id": "jr_streak_1",
+        "order": 1,
+        "scope": "life",
+        "tier": 1,
+        "label": "First Page",
+        "icon": "📓",
+        "need": {},
+        "xpReward": 8,
+        "xpAwards": { "WISDOM": 10 },
+        "description": "Write a journal entry today (start your streak)."
+      },
+      {
+        "id": "jr_streak_2",
+        "order": 2,
+        "scope": "life",
+        "tier": 2,
+        "label": "Daily Scribe",
+        "icon": "🖋️",
+        "need": {},
+        "xpReward": 12,
+        "xpAwards": { "WISDOM": 12 },
+        "description": "Write journals 2 days in a row."
+      },
+      {
+        "id": "jr_streak_5",
+        "order": 3,
+        "scope": "life",
+        "tier": 3,
+        "label": "Inked Five",
+        "icon": "📝",
+        "need": {},
+        "xpReward": 24,
+        "xpAwards": { "WISDOM": 18 },
+        "description": "Write journals 5 consecutive days."
+      },
+      {
+        "id": "jr_streak_7",
+        "order": 4,
+        "scope": "life",
+        "tier": 4,
+        "label": "Week of Words",
+        "icon": "📔",
+        "need": {},
+        "xpReward": 36,
+        "xpAwards": { "WISDOM": 20 },
+        "description": "Journal 7 days in a row."
+      },
+      {
+        "id": "jr_streak_14",
+        "order": 5,
+        "scope": "life",
+        "tier": 5,
+        "label": "Fortnight Scribe",
+        "icon": "📖",
+        "need": {},
+        "xpReward": 60,
+        "xpAwards": { "WISDOM": 26 },
+        "description": "Journal 14 consecutive days."
+      },
+
+      {
+        "id": "jr_words_10k",
+        "order": 6,
+        "scope": "life",
+        "tier": 3,
+        "label": "Ten-Thousand Words",
+        "icon": "✒️",
+        "need": {},
+        "xpReward": 40,
+        "xpAwards": { "WISDOM": 30 },
+        "description": "Reach a total of 10,000 journal words."
+      },
+      {
+        "id": "jr_words_20k",
+        "order": 7,
+        "scope": "life",
+        "tier": 4,
+        "label": "Twenty-Thousand Words",
+        "icon": "🖊️",
+        "need": {},
+        "xpReward": 80,
+        "xpAwards": { "WISDOM": 60 },
+        "description": "Reach a total of 20,000 journal words."
+      }
+    ]
   }
 ];
 

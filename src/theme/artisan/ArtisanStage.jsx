@@ -6,11 +6,6 @@ export default function ArtisanStage() {
   const effectsRef = React.useRef(null);
   const audioCtxRef = React.useRef(null);
 
-  React.useEffect(() => {
-    const prev = document.body.style.fontFamily;
-    document.body.style.fontFamily = 'Lobster, cursive';
-    return () => { document.body.style.fontFamily = prev; };
-  }, []);
 
   React.useEffect(() => {
     const check = () => setIsDark(document.documentElement.classList.contains('dark'));
@@ -199,7 +194,7 @@ const MAX_SPLASHES = 14; // یا 10 اگر سیستم سبک‌تره
               linear-gradient(180deg, #ffffff, #fafafa)
             `,
           backgroundBlendMode: isDark ? 'screen, screen, normal, multiply' : 'screen, screen, multiply, normal',
-          backgroundAttachment: "fixed",
+          backgroundAttachment: "scroll",
           backgroundSize: "cover"
         }}
       />

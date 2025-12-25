@@ -1,0 +1,51 @@
+# Node / package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnp.*
+
+# Build artifacts
+dist/
+build/
+release/
+out/
+electron/dist/
+electron/out/
+.vite/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+.eslintcache
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+.firebase/
+
+# Android / mobile
+android/.gradle/
+android/app/build/
+android/app/*.keystore
+android/app/*.jks
+android/local.properties
+android/captures/
+android/.idea/
+
+# Editors / OS
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Temp / backups
+tmp_*
+_tmp_*
+TEMP_*
+last backup/
+*.log
+node_modules
+*.docx

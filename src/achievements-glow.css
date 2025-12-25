@@ -65,6 +65,14 @@
     0 0 24px rgba(16, 185, 129, 0.2);
 }
 
+/* JOURNAL - Ink black, subtle paper sheen */
+.ach-pill[data-ach-type="journal"] {
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.20),
+    0 6px 18px rgba(0, 0, 0, 0.16),
+    inset 0 0 0 1px rgba(0,0,0,0.06);
+}
+
 /* Hover effect - intensify glow */
 .ach-pill:hover {
   transform: translateY(-2px);
@@ -123,4 +131,11 @@
     0 0 12px rgba(16, 185, 129, 0.7),
     0 0 20px rgba(16, 185, 129, 0.5),
     0 0 32px rgba(16, 185, 129, 0.3);
+}
+
+.ach-pill[data-ach-type="journal"]:hover {
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.28),
+    0 10px 28px rgba(0, 0, 0, 0.22),
+    inset 0 0 0 1px rgba(0,0,0,0.08);
 }

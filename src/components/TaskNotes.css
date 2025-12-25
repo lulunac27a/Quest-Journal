@@ -1,0 +1,29 @@
+/* TaskNotes - minimal, modern sticky/comment UI */
+
+.tn-wrap{ position: relative; display: inline-block; }
+.tn-btn{ position: relative; }
+.tn-dot{ position:absolute; top:-2px; right:-2px; width:8px; height:8px; border-radius:999px; background:#22c55e; border:2px solid var(--card,#fff); }
+.tn-count{ position:absolute; top:-6px; right:-6px; background:#0f172a; color:#fff; border-radius:999px; font-size:10px; padding:0 4px; line-height:14px; border:2px solid var(--card); }
+
+.tn-pop{
+  position:absolute; right:0; top:110%; z-index:60; min-width:260px; max-width: min(420px, 92vw);
+  background: var(--card); color: var(--text); border:1px solid var(--border); border-radius:12px; box-shadow:0 10px 26px rgba(0,0,0,.16);
+  padding:10px; display:grid; gap:8px;
+}
+.tn-header{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.tn-input{ display:grid; gap:6px; }
+.tn-input textarea{ width:100%; min-height:64px; resize:vertical; border:1px solid var(--border); border-radius:10px; padding:8px 10px; background:#fff; color:var(--text); }
+.dark .tn-input textarea{ background:#0f172a; }
+.tn-actions{ display:flex; gap:6px; justify-content:flex-end; }
+
+.tn-list{ display:grid; gap:8px; max-height:260px; overflow:auto; }
+.tn-note{ border:1px solid var(--border); border-radius:10px; padding:8px; background: color-mix(in srgb, var(--card) 96%, transparent); }
+.tn-note-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:12px; color:var(--muted); }
+.tn-note-body{ white-space:pre-wrap; word-break:break-word; margin-top:4px; }
+.tn-note-edit textarea{ width:100%; min-height:60px; resize:vertical; }
+
+.tn-chip{ font-size:11px; color:var(--muted); }
+.tn-pin{ color:#f59e0b; }
+
+.tn-empty{ color:var(--muted); font-size:12px; text-align:center; padding:6px 0; }
+

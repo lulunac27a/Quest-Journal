@@ -9,17 +9,18 @@
  * { unlocked: [{ id, label, tier, type, icon, gainedAt, xpReward, description }], ... }
  */
 
+import { getJSON as getJSONu, setJSON as setJSONu } from "./userLocal.js";
+import { emitChange } from "../sync/repos.js";
+
 export function loadAchievements() {
-  try {
-    return JSON.parse(localStorage.getItem("qj_ach_v2") || "{}");
-  } catch {
-    return {};
-  }
+  try { return getJSONu("qj_ach_v2", {}) || {}; }
+  catch { return {}; }
 }
 
 export function saveAchievements(ach) {
   try {
-    localStorage.setItem("qj_ach_v2", JSON.stringify(ach || {}));
+    setJSONu("qj_ach_v2", ach || {});
+    try { emitChange(); } catch {}
   } catch {}
 }
 

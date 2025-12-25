@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Character from "./Character.jsx";
 import { ACH_CATALOG as ACH } from "../core/achievements.js"; // preserve existing import
 import XPOverview from "./XPOverview.jsx";
-import SyncStatusBadge from "./SyncStatusBadge.jsx";
+import XpHudBar from "./XpHudBar.jsx";
 
 export default function AppHeader({
   xp,
@@ -43,7 +43,6 @@ export default function AppHeader({
         </div>
 
         <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <SyncStatusBadge />
           {isMobile && (
             <button
               type="button"
@@ -78,33 +77,7 @@ export default function AppHeader({
         </div>
       </div>
 
-      <div className="stats">
-        <div className="stat">
-          <div className="label">Legacy XP</div>
-          <div className="value mono">{xp}</div>
-        </div>
-        <div className="stat">
-          <div className="label">Next Level</div>
-          <div className="value mono">{nextIn} XP</div>
-        </div>
-        <div className="stat">
-          <div className="label">Progress</div>
-          <div className="value mono">{Math.round(progressPct)}%</div>
-        </div>
-      </div>
-
-      <div
-        className="progress-shell"
-        role="progressbar"
-        aria-valuemin="0"
-        aria-valuemax="100"
-        aria-valuenow={Math.round(progressPct)}
-      >
-        <div
-          className="progress-fill"
-          style={{ width: `${Math.min(100, Math.max(0, progressPct))}%` }}
-        />
-      </div>
+      <XpHudBar xp={xp} nextIn={nextIn} progressPct={progressPct} />
 
       {origin && (
         <div className="origin-banner">

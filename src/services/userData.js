@@ -5,6 +5,14 @@ import {
 } from "firebase/firestore";
 import { signInWithPopup, signOut } from "firebase/auth";
 
+function makeClientMeta() {
+  const ts = Date.now();
+  return {
+    clientUpdatedAt: ts,
+    metaClient: { clientUpdatedAt: ts },
+  };
+}
+
 // ورود با گوگل
 export async function loginWithGoogle() {
   const res = await signInWithPopup(auth, googleProvider);
@@ -27,6 +35,7 @@ export async function ensureUserDocument() {
       ownerId: uid,                 // برای پاس‌شدن رول‌ها ضروری است
       displayName: auth.currentUser.displayName ?? "Anon",
       updatedAt: serverTimestamp(),
+      ...makeClientMeta(),
     },
     { merge: true }
   );
@@ -41,6 +50,7 @@ export async function addQuest(data) {
   return addDoc(col, {
     ...data,
     createdAt: serverTimestamp(),
+    ...makeClientMeta(),
   });
 }
 

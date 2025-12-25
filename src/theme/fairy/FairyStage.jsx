@@ -112,6 +112,15 @@ function useOverlaySpritesFairy({ activeFairy }) {
       S.boxes = Array.from(document.querySelectorAll(".card")).map(el => el.getBoundingClientRect());
     };
     const pointInCards = (x,y) => S.boxes.some(r => x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom);
+    // Right scrollbar gutter detection to avoid magnet there
+    const inRightScrollbarGutter = (x) => {
+      try {
+        const sb = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+        if (!sb) return false;
+        const pad = 8;
+        return x >= (window.innerWidth - (sb + pad));
+      } catch { return false; }
+    };
 
     const resize = () => {
       S.w = innerWidth; S.h = innerHeight;
@@ -128,6 +137,7 @@ function useOverlaySpritesFairy({ activeFairy }) {
     const handleMove = (e) => {
       S.mouse.x = e.clientX; S.mouse.y = e.clientY; S.mouse.seen = true;
       S.mouse.inCard = pointInCards(S.mouse.x, S.mouse.y);
+      if (inRightScrollbarGutter(S.mouse.x)) { S.mouse.inCard = true; }
       S.mouse.magnetOn = S.mouse.seen && !S.mouse.inCard; // بیرون کارت → جذب روشن
     };
     const handleLeave = () => {
@@ -344,13 +354,6 @@ export default function FairyStage({ dark }) {
   const [ok, setOk] = useState(false);
   const glRef = useRef(null);
   const spritesRef = useOverlaySpritesFairy({ activeFairy: true });
-
-  // Apply theme font globally while Fairy is active
-  useEffect(() => {
-    const prev = document.body.style.fontFamily;
-    document.body.style.fontFamily = '"Quicksand", "Comfortaa", sans-serif';
-    return () => { document.body.style.fontFamily = prev; };
-  }, []);
 
   const reduceRef = usePrefersReducedMotion();
 

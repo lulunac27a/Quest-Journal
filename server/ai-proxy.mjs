@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import fetch from "node-fetch";
 import 'dotenv/config';
+import socialRouter from "./social.mjs";
+import leaderboardRouter from "./leaderboard.mjs";
 
 const ENV = {
   PORT: (process.env.PORT || "5175").trim(),
@@ -11,12 +13,40 @@ const ENV = {
   PRIMARY_AI_KEY: (process.env.PRIMARY_AI_KEY || "").trim(),
   PRIMARY_AI_MODEL: (process.env.PRIMARY_AI_MODEL || "x-ai/grok-4-fast:free").trim(),
   PRIMARY_IMAGE_MODEL: (process.env.PRIMARY_IMAGE_MODEL || "google/gemini-2.5-flash-image-preview").trim(),
+  AI_PROXY_KEY: (process.env.AI_PROXY_KEY || "").trim(),
+  ALLOWED_BASE_URLS: (process.env.ALLOWED_BASE_URLS || "").split(",").map(s => s.trim().replace(/\/$/, "")).filter(Boolean),
 };
 
 const app = express();
 app.use(cors({ origin: ENV.CORS_ORIGIN, credentials: true }));
 app.use(cookieParser());
 app.use(express.json({ limit: "4mb" }));
+// Mount social API (no-op if admin credentials missing)
+try { app.use(socialRouter); } catch {}
+try { app.use(leaderboardRouter); } catch {}
+
+// Simple API key guard for the proxy itself (fail-closed if not configured)
+function requireProxyKey(req, res, next) {
+  if (!ENV.AI_PROXY_KEY) return res.status(503).json({ error: "proxy_key_missing" });
+  const hdr = String(req.get("x-proxy-key") || "").trim();
+  if (hdr && hdr === ENV.AI_PROXY_KEY) return next();
+  return res.status(401).json({ error: "unauthorized" });
+}
+
+// Per-IP rate limit (in-memory)
+const rate = new Map();
+function checkRateLimit(req, res, next) {
+  const key = req.ip || "anon";
+  const now = Date.now();
+  let rec = rate.get(key);
+  if (!rec || now >= rec.resetAt) rec = { count: 0, resetAt: now + 60_000 };
+  rec.count += 1;
+  rate.set(key, rec);
+  if (rec.count > 30) {
+    return res.status(429).json({ error: "rate_limited", resetAt: rec.resetAt });
+  }
+  return next();
+}
 
 function normalizeChatContent(json) {
   return (
@@ -27,15 +57,17 @@ function normalizeChatContent(json) {
 }
 
 function pickOpenRouterSource(req) {
+  const allowedBases = ENV.ALLOWED_BASE_URLS.length ? ENV.ALLOWED_BASE_URLS : [ENV.PRIMARY_AI_BASE];
+  const isAllowedBase = (url) => allowedBases.includes(String(url || "").replace(/\/$/, ""));
   if (req.headers["x-api-key"] && req.headers["x-base-url"]) {
-    return {
-      apiKey: req.headers["x-api-key"],
-      baseUrl: String(req.headers["x-base-url"]).replace(/\/$/, ""),
-      model: req.headers["x-model"] || ENV.PRIMARY_AI_MODEL,
-      via: "byok",
-    };
+    const baseUrl = String(req.headers["x-base-url"]).replace(/\/$/, "");
+    if (!isAllowedBase(baseUrl)) {
+      throw new Error("base_url_not_allowed");
+    }
+    return { apiKey: req.headers["x-api-key"], baseUrl, model: req.headers["x-model"] || ENV.PRIMARY_AI_MODEL, via: "byok" };
   }
   if (ENV.PRIMARY_AI_KEY) {
+    if (!isAllowedBase(ENV.PRIMARY_AI_BASE)) throw new Error("primary_base_not_allowed");
     return {
       apiKey: ENV.PRIMARY_AI_KEY,
       baseUrl: ENV.PRIMARY_AI_BASE,
@@ -139,7 +171,7 @@ async function callOpenRouterResponses(src, { model, prompt }) {
 }
 
 // ---------- routes ----------
-app.get("/api/ai/test", (_req, res) => {
+app.get("/api/ai/test", requireProxyKey, (_req, res) => {
   res.json({
     ok: true,
     chat: { base: ENV.PRIMARY_AI_BASE, model: ENV.PRIMARY_AI_MODEL, keyConfigured: !!ENV.PRIMARY_AI_KEY },
@@ -147,7 +179,7 @@ app.get("/api/ai/test", (_req, res) => {
   });
 });
 
-app.post("/api/ai/chat", async (req, res) => {
+app.post("/api/ai/chat", requireProxyKey, checkRateLimit, async (req, res) => {
   try {
     const src = pickOpenRouterSource(req);
     const model = req.body.model || src.model;
@@ -195,7 +227,7 @@ app.post("/api/ai/chat", async (req, res) => {
   }
 });
 
-app.post("/api/ai/image", async (req, res) => {
+app.post("/api/ai/image", requireProxyKey, checkRateLimit, async (req, res) => {
   const qk = userKey(req);
   try {
     const { prompt, size } = req.body || {};

@@ -7,6 +7,9 @@ import { initializeApp, getApps } from "firebase/app";
 import {
   getAuth,
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   setPersistence,
   indexedDBLocalPersistence,
   browserLocalPersistence,
@@ -15,13 +18,24 @@ import {
 } from "firebase/auth";
 import {
   getFirestore,
-  enableIndexedDbPersistence,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager,
   doc,
   getDoc,
   setDoc,
   onSnapshot,
   serverTimestamp,
+  collection,
+  getDocs,
+  writeBatch,
+  updateDoc,
+  deleteDoc,
+  runTransaction,
+  query,
+  orderBy,
 } from "firebase/firestore";
+import { getAuthPersistencePreference } from "./authPersistence.js";
 
 const cfg = {
   apiKey: import.meta.env.VITE_FB_API_KEY,
@@ -39,7 +53,18 @@ export const firebaseEnabled = Boolean(
 // --- App/Auth/DB
 export const app = firebaseEnabled ? (getApps()[0] || initializeApp(cfg)) : null;
 export const auth = firebaseEnabled ? getAuth(app) : null;
-export const db = firebaseEnabled ? getFirestore(app) : null;
+export const db = firebaseEnabled ? (() => {
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentSingleTabManager(),
+      }),
+    });
+  } catch {
+    // Re-use existing instance or fall back to memory cache if IndexedDB is unavailable.
+    return getFirestore(app);
+  }
+})() : null;
 
 // --- Provider گوگل (با select_account برای سوییچ راحت اکانت)
 export const googleProvider = firebaseEnabled ? new GoogleAuthProvider() : null;
@@ -47,22 +72,27 @@ if (googleProvider) {
   try { googleProvider.setCustomParameters({ prompt: "select_account" }); } catch {}
 }
 
-// --- کش آفلاین (در وب؛ اگر چندتب باز باشد ممکن است fail شود، اهمیتی ندارد)
-if (db) {
-  enableIndexedDbPersistence(db).catch(() => {});
-}
-
 // --- زنجیره‌ی persistenceِ مقاوم (iOS/Safari Private ok)
-export async function ensureAuthPersistence() {
+export async function ensureAuthPersistence(mode) {
   if (!auth) return;
-  try { await setPersistence(auth, indexedDBLocalPersistence); return; } catch {}
-  try { await setPersistence(auth, browserLocalPersistence); return; } catch {}
-  try { await setPersistence(auth, browserSessionPersistence); return; } catch {}
-  try { await setPersistence(auth, inMemoryPersistence); return; } catch {}
-  // آخرین تلاش هم شکست خورد؛ مشکلی نیست، Auth در حافظه‌ی موقتی ادامه می‌دهد.
+  const pref = mode || getAuthPersistencePreference();
+  const preferSession = pref === "session";
+  const targets = preferSession
+    ? [browserSessionPersistence, inMemoryPersistence]
+    : [indexedDBLocalPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence];
+  for (const target of targets) {
+    try {
+      await setPersistence(auth, target);
+      return;
+    } catch {}
+  }
+  // O?OrO?UOU+ O?U,O"O' U?U. O'UcO3O? OrU^O?O_O> U.O'UcU,UO U+UOO3O?OO Auth O_O? O-O"U?O,U??OUO U.U^U,O?UO O"O_O"U.U? U.UO??OO_U?O_.
 }
-
 // --- Re-exports موردنیاز موتور سینک
 export {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   doc, getDoc, setDoc, onSnapshot, serverTimestamp,
+  collection, getDocs, writeBatch, updateDoc, deleteDoc, runTransaction, query, orderBy,
 };

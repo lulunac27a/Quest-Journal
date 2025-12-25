@@ -22,21 +22,20 @@ export function weekKeyOf(d = new Date()) {
 // Reset helpers
 // ─────────────────────────────────────────────────────────────
 
+import { getItem as getItemu, setItem as setItemu, getJSON as getJSONu, setJSON as setJSONu } from "./userLocal.js";
+
 export function resetDailyAchievements() {
   try {
     const key = "qj_daily_reset_key";
     const today = todayISO();
-    const last = localStorage.getItem(key);
+    const last = getItemu(key);
     if (last !== today) {
-      const raw = localStorage.getItem("qj_ach_v2");
-      if (raw) {
-        const ach = JSON.parse(raw);
-        if (ach?.unlocked?.length) {
-          ach.unlocked = ach.unlocked.filter(a => a.type !== "daily");
-          localStorage.setItem("qj_ach_v2", JSON.stringify(ach));
-        }
+      const ach = getJSONu("qj_ach_v2", null);
+      if (ach?.unlocked?.length) {
+        ach.unlocked = ach.unlocked.filter(a => a.type !== "daily");
+        setJSONu("qj_ach_v2", ach);
       }
-      localStorage.setItem(key, today);
+      setItemu(key, today);
     }
   } catch (e) {
     console.warn("Daily reset failed:", e);
@@ -47,17 +46,14 @@ export function resetWeeklyAchievements() {
   try {
     const key = "qj_weekly_reset_key";
     const current = weekKeyOf();
-    const last = localStorage.getItem(key);
+    const last = getItemu(key);
     if (last !== current) {
-      const raw = localStorage.getItem("qj_ach_v2");
-      if (raw) {
-        const ach = JSON.parse(raw);
-        if (ach?.unlocked?.length) {
-          ach.unlocked = ach.unlocked.filter(a => a.type !== "weekly");
-          localStorage.setItem("qj_ach_v2", JSON.stringify(ach));
-        }
+      const ach = getJSONu("qj_ach_v2", null);
+      if (ach?.unlocked?.length) {
+        ach.unlocked = ach.unlocked.filter(a => a.type !== "weekly");
+        setJSONu("qj_ach_v2", ach);
       }
-      localStorage.setItem(key, current);
+      setItemu(key, current);
     }
   } catch (e) {
     console.warn("Weekly reset failed:", e);

@@ -33,6 +33,7 @@ export default function FairyMagnetOverlay({ active = true }) {
       bugs: [],
       boxes: [],
       mouse: { x: 0, y: 0, insideCard: true, seenOnce: false },
+      touchActive: false,
       alpha: 0, // overlay fade
     };
 
@@ -55,12 +56,54 @@ export default function FairyMagnetOverlay({ active = true }) {
     const pointInCards = (x, y) =>
       S.boxes.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
 
+    // Treat the right scrollbar gutter as a non-attract area.
+    // On most platforms, the gutter width is innerWidth - clientWidth.
+    // Add a small safety pad so near-edge moves don't trigger the swarm.
+    const inRightScrollbarGutter = (x) => {
+      try {
+        const sb = Math.max(0, window.innerWidth - document.documentElement.clientWidth);
+        const pad = 8; // extra pad so it feels natural
+        const w = (sb > 0 ? sb : 12) + pad;
+        return x >= (window.innerWidth - w);
+      } catch { return false; }
+    };
+
     const onMove = (e) => {
       const x = e.clientX, y = e.clientY;
-      S.mouse.x = x; S.mouse.y = y; S.mouse.seenOnce = true;
-      S.mouse.insideCard = pointInCards(x, y);
+      const inCards = pointInCards(x, y);
+      const inScrollbar = inRightScrollbarGutter(x);
+
+      // Ignore touch moves unless a touch attraction is active.
+      if (e.pointerType === "touch" && !S.touchActive) {
+        S.mouse.insideCard = true;
+        return;
+      }
+
+      S.mouse.x = x; S.mouse.y = y;
+      if (e.pointerType !== "touch" || S.touchActive) S.mouse.seenOnce = true;
+      S.mouse.insideCard = inCards || inScrollbar;
     };
+
+    // On touch devices we only want attraction while a finger is down, and only outside cards.
+    const onDown = (e) => {
+      if (e.pointerType === "touch") {
+        const inCards = pointInCards(e.clientX, e.clientY);
+        const inScrollbar = inRightScrollbarGutter(e.clientX);
+        S.touchActive = !(inCards || inScrollbar);
+      }
+      onMove(e);
+    };
+    const onUp = (e) => {
+      if (e.pointerType === "touch") {
+        S.touchActive = false;
+        S.mouse.insideCard = true; // fade overlay back out
+      }
+    };
+
     addEventListener("pointermove", onMove, { passive: true });
+    addEventListener("pointerdown", onDown, { passive: true });
+    addEventListener("pointerup", onUp, { passive: true });
+    addEventListener("pointercancel", onUp, { passive: true });
 
     // seed a small flock (lighter than the built-in ones)
     const N = 14;
@@ -113,7 +156,8 @@ export default function FairyMagnetOverlay({ active = true }) {
       ctx.clearRect(0, 0, S.w, S.h);
 
       // fade overlay: show only when mouse is outside any card and has moved at least once
-      const targetAlpha = S.mouse.seenOnce && !S.mouse.insideCard ? 1 : 0;
+      const allowAttract = S.touchActive ? true : S.mouse.seenOnce;
+      const targetAlpha = allowAttract && !S.mouse.insideCard ? 1 : 0;
       S.alpha += (targetAlpha - S.alpha) * 0.15;
       cvs.style.opacity = S.alpha.toFixed(3);
 
@@ -169,6 +213,9 @@ export default function FairyMagnetOverlay({ active = true }) {
       cancelAnimationFrame(S.raf);
       removeEventListener("resize", resize);
       removeEventListener("pointermove", onMove);
+      removeEventListener("pointerdown", onDown);
+      removeEventListener("pointerup", onUp);
+      removeEventListener("pointercancel", onUp);
       mo.disconnect();
       cvs.remove();
     };

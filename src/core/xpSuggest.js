@@ -8,10 +8,10 @@ import { QUEST_TYPES, QUEST_UNITS_LABEL } from "./constants.js";
 
 // اثر ملایم زمان (log2) با ضرایب پایین‌تر
 const TIME_K = {
-  BASIC: 0.15,  // hours
-  SIDE:  0.20,  // days
-  MAIN:  0.25,  // weeks
-  EPIC:  0.30,  // months
+  BASIC: 0.15,  // baseline: hours (BASIC UI uses minutes; see normalization below)
+  SIDE:  0.20,  // baseline: days   (SIDE UI uses hours; see normalization below)
+  MAIN:  0.25,  // baseline: weeks  (MAIN UI uses days;  see normalization below)
+  EPIC:  0.30,  // baseline: months (EPIC UI uses weeks; see normalization below)
 };
 
 // پایه‌ی مقیاس: در Basic با ورودی‌های متوسط ~350 XP
@@ -56,7 +56,20 @@ function mentalScoreAmplified({
  */
 function timeFactor(questType, duration) {
   const k = TIME_K[questType] ?? 0.2;
-  const u = Math.max(0.25, Number(duration) || 0.25);
+  let u = Math.max(0, Number(duration) || 0);
+  // Normalize to the historical baseline units used for tuning:
+  // BASIC: hours  (UI minutes -> hours)
+  // SIDE:  days   (UI hours   -> days)
+  // MAIN:  weeks  (UI days    -> weeks)
+  // EPIC:  months (UI weeks   -> months)
+  switch ((questType || '').toUpperCase()) {
+    case 'BASIC': u = u / 60; break;        // minutes -> hours
+    case 'SIDE':  u = u / 24; break;        // hours   -> days
+    case 'MAIN':  u = u / 7;  break;        // days    -> weeks
+    case 'EPIC':  u = u / 4;  break;        // weeks   -> months (approx)
+    default: break;
+  }
+  u = Math.max(0.25, u);
   const tf = 1 + k * Math.log2(1 + u);
   return Math.min(tf, 2.8);
 }

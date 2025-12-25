@@ -2,25 +2,16 @@
 import Squirrel from '../../components/Squirrel'; // اطمینان حاصل کنید که مسیر صحیح است
 
 export default function ForestStage({ dark = false }) {
-  React.useEffect(() => {
-    const prev = document.body.style.fontFamily;
-    document.body.style.fontFamily = 'Palatino, ui-serif, serif';
-    return () => {
-      document.body.style.fontFamily = prev;
-    };
-  }, []);
-
   return (
     <div
       key={dark ? 'dark' : 'light'}
       style={{
         position: 'absolute',
         inset: 0,
-        fontFamily: 'Palatino, ui-serif, serif',
         background: dark
           ? 'radial-gradient(1200px 600px at 50% 20%, rgba(15,51,32,0.3), transparent 70%), linear-gradient(180deg, #0f3320, #1a4d2e 50%, #0f3320)'
           : 'radial-gradient(1200px 600px at 50% 20%, rgba(34,97,57,0.2), transparent 70%), linear-gradient(180deg, #ecfdf5, #d1fae5 50%, #a7f3d0)',
-        backgroundAttachment: 'fixed',
+        backgroundAttachment: 'scroll',
         backgroundSize: 'cover',
       }}
     >

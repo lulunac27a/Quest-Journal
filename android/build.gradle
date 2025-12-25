@@ -1,0 +1,43 @@
+// android/build.gradle  (Project-level - FINAL)
+
+buildscript {
+    repositories {
+        // Mirrors first (برای مواقع محدودیت شبکه)
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        // Officials
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // با Gradle Wrapper=8.6 بهترینه که AGP هم 8.6 باشه
+        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'com.google.gms:google-services:4.4.3'
+    }
+}
+
+// Centralized dependency versions for subprojects
+ext {
+    androidxAppCompatVersion = '1.7.0'
+    androidxCoordinatorLayoutVersion = '1.2.0'
+    coreSplashScreenVersion = '1.0.1'
+
+    junitVersion = '4.13.2'
+    androidxJunitVersion = '1.1.5'
+    androidxEspressoCoreVersion = '3.5.1'
+}
+
+allprojects {
+    repositories {
+        // Mirrors + Officials (ترتیب مهم نیست، ولی mirrors جلوتر سرعت/دسترس‌پذیری بهتر می‌ده)
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        google()
+        mavenCentral()
+    }
+}
+
+// اختیاری
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

@@ -37,29 +37,8 @@ const DEFAULT_LISTS_UNIFIED = [
   { id: "inbox",     name: "Inbox" },
 ];
 
-/* ------------------ low-level helpers ------------------ */
-function getItem(key) {
-  try { return localStorage.getItem(key); } catch { return null; }
-}
-function setItem(key, val) {
-  try { localStorage.setItem(key, val); } catch {}
-}
-function removeItem(key) {
-  try { localStorage.removeItem(key); } catch {}
-}
-
-function getJSON(key, fallback) {
-  try {
-    const raw = getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw);
-  } catch {
-    return fallback;
-  }
-}
-function setJSON(key, obj) {
-  try { setItem(key, JSON.stringify(obj)); } catch {}
-}
+/* ------------------ low-level helpers (per-user) ------------------ */
+import { getItem, setItem, removeItem, getJSON, setJSON } from "./userLocal.js";
 
 /* ------------------ list normalization ------------------ */
 function toValidListEntry(x) {

@@ -24,13 +24,6 @@ export default function DesertStage() {
     return () => observer.disconnect();
   }, []);
 
-  // Apply theme font globally while Desert is active
-  useEffect(() => {
-    const prev = document.body.style.fontFamily;
-    document.body.style.fontFamily = "Papyrus, fantasy";
-    return () => { document.body.style.fontFamily = prev; };
-  }, []);
-
   // SVG با تمام جزئیات (خطوط موجی + تپه‌های شن + بوته‌ها)
   const sandDunesSVG = `
     <svg xmlns='http://www.w3.org/2000/svg' width='960' height='480' viewBox='0 0 960 480'>
@@ -66,7 +59,7 @@ export default function DesertStage() {
                  linear-gradient(180deg, #2a1f0f, #3a2f1f 50%, #2a1f0f 70%, #1f180a)`
               : `radial-gradient(2400px 1000px at 50% 120%, rgba(245, 180, 95, .28) 20%, rgba(220, 160, 80, .18) 50%, transparent 70%),
                  linear-gradient(180deg, #f9e4b7, #f4d9a3 50%, #eecf8f 70%, #d9b67f)`,
-            backgroundAttachment: 'fixed',
+            backgroundAttachment: 'scroll',
             backgroundSize: 'cover',
           }}
         />

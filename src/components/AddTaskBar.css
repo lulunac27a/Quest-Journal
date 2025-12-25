@@ -3,12 +3,13 @@
 /* ---- layout ---- */
 .add.addTaskBar {
   display: grid;
-  grid-template-columns: 1fr auto auto auto auto auto;
+  grid-template-columns: 1fr minmax(120px, 1fr) minmax(96px, auto) minmax(96px, auto) minmax(44px, auto) minmax(44px, auto) minmax(88px, auto);
   grid-template-areas:
-    "title xp due repeat ai add"
-    "notes notes notes notes notes notes";
+    "title xp due repeat ai tools add"
+    "notes notes notes notes notes notes notes";
   gap: 10px;
   align-items: center;
+  --xp-input-width: clamp(70px, 18vw, 90px);
 }
 
 /* map by class (safe, no nth-of-type) */
@@ -16,6 +17,7 @@
 .add.addTaskBar > .xpGroup        { grid-area: xp; }
 .add.addTaskBar > .dueWrap        { grid-area: due; }
 .add.addTaskBar > .repeatWrap     { grid-area: repeat; }
+.add.addTaskBar > .toolsWrap      { grid-area: tools; }
 .add.addTaskBar > .aiBtn          { grid-area: ai; }
 .add.addTaskBar > .addBtn         { grid-area: add; }
 .add.addTaskBar > .notesWrap      { grid-area: notes; }
@@ -34,6 +36,7 @@
 }
 .add.addTaskBar .titleInput::placeholder,
 .add.addTaskBar textarea::placeholder { opacity: .6; }
+.add.addTaskBar .xpGroup .xpInput { width: var(--xp-input-width); min-width: 60px; }
 
 /* buttons */
 .add.addTaskBar .btn {
@@ -91,6 +94,62 @@
 /* rows */
 .row-sb { display: flex; justify-content: space-between; align-items: center; }
 
+.repeat-card {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--surface, #f9fafb);
+}
+.weekday-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.weekday-chip {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 6px 10px;
+  min-width: 42px;
+  text-align: center;
+  cursor: pointer;
+}
+.weekday-chip.active {
+  background: var(--primary, #4461ff);
+  border-color: var(--primary, #4461ff);
+  color: #fff;
+}
+.mini-cal {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+}
+.mini-cal-head {
+  font-size: 11px;
+  text-align: center;
+  opacity: .7;
+}
+.mini-cal-cell {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 4px;
+  background: var(--surface, #fff);
+  cursor: pointer;
+  text-align: center;
+}
+.mini-cal-cell.active {
+  background: var(--primary, #4461ff);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+}
+.mini-cal-cell.empty {
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
 /* modal */
 .modal-backdrop {
   position: fixed; inset: 0;
@@ -121,11 +180,60 @@
 /* responsive */
 @media (max-width: 860px) {
   .add.addTaskBar {
-    grid-template-columns: 1fr auto auto auto;
+    grid-template-columns:
+      1fr
+      minmax(120px, 1fr)
+      minmax(44px, auto)
+      minmax(44px, auto)
+      minmax(88px, auto);
     grid-template-areas:
-      "title title title add"
-      "xp    xp    ai    ai"
-      "due   repeat repeat repeat"
-      "notes notes  notes notes";
+      "title title title add add"
+      "xp    xp    ai    tools add"
+      "due   repeat repeat repeat repeat"
+      "notes notes  notes notes  notes";
   }
+  .add.addTaskBar .xpGroup { flex-wrap: wrap; min-width: 0; }
+}
+
+@media (max-width: 600px) {
+  .add.addTaskBar {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title add"
+      "xp    add"
+      "ai    tools"
+      "due   repeat"
+      "notes notes";
+    align-items: flex-start;
+    --xp-input-width: clamp(78px, 42vw, 150px);
+  }
+  .add.addTaskBar .titleInput { min-width: 0; }
+  .add.addTaskBar > .addBtn { align-self: stretch; min-height: 100%; }
+  .add.addTaskBar > .aiBtn { justify-self: flex-start; }
+  .add.addTaskBar > .toolsWrap { justify-self: flex-end; }
+  .add.addTaskBar .xpGroup {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .add.addTaskBar .xpGroup .xpInput { width: var(--xp-input-width); flex: 1 1 var(--xp-input-width); }
+  .add.addTaskBar .xpGroup .btn { padding: 7px 10px; }
+}
+
+@media (max-width: 420px) {
+  .add.addTaskBar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "title"
+      "xp"
+      "add"
+      "ai"
+      "tools"
+      "due"
+      "repeat"
+      "notes";
+    --xp-input-width: clamp(82px, 56vw, 180px);
+  }
+  .add.addTaskBar > .addBtn,
+  .add.addTaskBar .btn { width: 100%; text-align: center; }
+  .add.addTaskBar .xpGroup { justify-content: flex-start; }
 }

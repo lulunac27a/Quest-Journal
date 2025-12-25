@@ -105,6 +105,7 @@ export default function GlobalPlayer() {
   const [time, setTime] = useState({ cur: 0, dur: 0 });
 
   const current = m.current;
+  const playingActive = !!(m.playing && current);
   const isFile = current?.type === "file";
   // تشخیص ساده برای یوتیوب: هم با type=yt و هم URL embed
   const isYouTube = useMemo(() => {
@@ -217,8 +218,8 @@ export default function GlobalPlayer() {
   if (!current) {
     return (
       <div
-        className={`global-player ${m.playing ? "is-playing" : ""}`}
-        data-playing={m.playing ? "true" : undefined}
+        className={`global-player ${playingActive ? "is-playing" : ""}`}
+        data-playing={playingActive ? "true" : undefined}
       >
         <div className="gp-title">No track</div>
         <div className="gp-controls">
@@ -232,8 +233,8 @@ export default function GlobalPlayer() {
 
   return (
     <div
-      className={`global-player ${m.playing ? "is-playing" : ""}`}
-      data-playing={m.playing ? "true" : undefined}
+      className={`global-player ${playingActive ? "is-playing" : ""}`}
+      data-playing={playingActive ? "true" : undefined}
     >
       <div className="gp-title" title={current.title}>
         {current.title}
@@ -292,3 +293,5 @@ export default function GlobalPlayer() {
     </div>
   );
 }
+
+

@@ -661,4 +661,55 @@ export const PERK_RULES = [
     kind: "permanent",
     tiered: { baseMult: 1.03, perTier: 0.015 },
   },
+
+  // Journal achievements → Wisdom buffs
+  {
+    id: "ach_jr_streak_1",
+    label: "First Page",
+    source: { type: "ach", achId: "jr_streak_1" },
+    kind: "permanent",
+    tiered: { baseMult: 1.03, perTier: 0.015, branch: BR.WISDOM },
+  },
+  {
+    id: "ach_jr_streak_2",
+    label: "Daily Scribe",
+    source: { type: "ach", achId: "jr_streak_2" },
+    kind: "permanent",
+    tiered: { baseMult: 1.035, perTier: 0.016, branch: BR.WISDOM },
+  },
+  {
+    id: "ach_jr_streak_5",
+    label: "Inked Five",
+    source: { type: "ach", achId: "jr_streak_5" },
+    kind: "permanent",
+    tiered: { baseMult: 1.04, perTier: 0.018, branch: BR.WISDOM },
+  },
+  {
+    id: "ach_jr_streak_7",
+    label: "Week of Words",
+    source: { type: "ach", achId: "jr_streak_7" },
+    kind: "permanent",
+    tiered: { baseMult: 1.045, perTier: 0.02, branch: BR.WISDOM },
+  },
+  {
+    id: "ach_jr_streak_14",
+    label: "Fortnight Scribe",
+    source: { type: "ach", achId: "jr_streak_14" },
+    kind: "permanent",
+    tiered: { baseMult: 1.05, perTier: 0.022, branch: BR.WISDOM },
+  },
+  {
+    id: "ach_jr_words_10k",
+    label: "Ten-Thousand Words",
+    source: { type: "ach", achId: "jr_words_10k" },
+    kind: "permanent",
+    tiered: { baseMult: 1.05, perTier: 0.025, branch: BR.WISDOM },
+  },
+  {
+    id: "ach_jr_words_20k",
+    label: "Twenty-Thousand Words",
+    source: { type: "ach", achId: "jr_words_20k" },
+    kind: "permanent",
+    tiered: { baseMult: 1.06, perTier: 0.03, branch: BR.WISDOM },
+  },
 ];

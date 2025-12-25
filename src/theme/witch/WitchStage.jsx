@@ -12,12 +12,6 @@ import astronautLottieURL from "../../assets/Lottie/Astronaut.lottie";
 import witchLottieURL     from "../../assets/Lottie/witch.lottie";
 
 export default function WitchStage({ dark = false }) {
-  React.useEffect(() => {
-    const prev = document.body.style.fontFamily;
-    document.body.style.fontFamily = '"Cinzel", "Philosopher", serif';
-    return () => { document.body.style.fontFamily = prev; };
-  }, []);
-
   return (
     <div style={{ position: "absolute", inset: 0 }}>
       <WitchBackground dark={dark} />

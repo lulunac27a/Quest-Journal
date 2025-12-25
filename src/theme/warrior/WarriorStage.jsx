@@ -4,12 +4,6 @@ import React from 'react';
 export default function WarriorStage() {
   const [isDark, setIsDark] = React.useState(false);
 
-  React.useEffect(() => {
-    const prev = document.body.style.fontFamily;
-    document.body.style.fontFamily = 'Cinzel, "Times New Roman", Times, serif';
-    return () => { document.body.style.fontFamily = prev; };
-  }, []);
-
   // تشخیص دارک/لایت از کلاس html.dark
   React.useEffect(() => {
     const check = () => setIsDark(document.documentElement.classList.contains('dark'));

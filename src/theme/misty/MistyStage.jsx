@@ -59,7 +59,7 @@ export default function MistyStage({ dark = false, intensity = 1 }) {
     const cvs = skyRef.current; if (!cvs) return;
     const ctx = cvs.getContext("2d", { alpha: true }); if (!ctx) return;
 
-    let w=0,h=0,dpr=Math.min(2,devicePixelRatio||1),raf=0;
+    let w=0,h=0,dpr=Math.min(1.25,devicePixelRatio||1),raf=0;
     const resize=()=>{ w=innerWidth; h=innerHeight;
       cvs.width=Math.floor(w*dpr); cvs.height=Math.floor(h*dpr);
       cvs.style.width=w+"px"; cvs.style.height=h+"px";
@@ -74,6 +74,7 @@ export default function MistyStage({ dark = false, intensity = 1 }) {
     }));
 
     const loop=()=> {
+      if (document.hidden) { raf=requestAnimationFrame(loop); return; }
       const t=performance.now()/1000;
       ctx.clearRect(0,0,w,h);
       if (dark) {
@@ -116,7 +117,7 @@ export default function MistyStage({ dark = false, intensity = 1 }) {
     const cvs = cloudRef.current; if (!cvs) return;
     const ctx = cvs.getContext("2d", { alpha: true }); if (!ctx) return;
 
-    let w=0,h=0,dpr=Math.min(2,devicePixelRatio||1),raf=0;
+    let w=0,h=0,dpr=Math.min(1.25,devicePixelRatio||1),raf=0;
     const resize=()=>{ w=innerWidth; h=innerHeight;
       cvs.width=Math.floor(w*dpr); cvs.height=Math.floor(h*dpr);
       cvs.style.width=w+"px"; cvs.style.height=h+"px";
@@ -165,6 +166,7 @@ export default function MistyStage({ dark = false, intensity = 1 }) {
     const lerp = (a,b,t)=>a+(b-a)*t;
 
     const loop=()=> {
+      if (document.hidden) { raf=requestAnimationFrame(loop); return; }
       const now=performance.now();
       let dt=Math.min(0.08,(now-tPrev)/1000);
       tPrev=now; acc+=dt;

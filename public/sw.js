@@ -1,5 +1,5 @@
 // public/sw.js  (یا /sw.js بسته به پروژه)
-const VERSION = 'qj-2025-10-14-02';       // هر دیپلوی عوضش کن
+const VERSION = 'qj-1.2.0-20251125-2146-999a320';       // هر دیپلوی عوضش کن
 const CACHE   = `app-${VERSION}`;
 
 // فایل‌های fingerprinted رو می‌گذاریم کش؛ HTML/manifest/sw.js همیشه تازه
@@ -50,8 +50,27 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // 3) فایل‌های fingerprinted (js/css/فونت/عکس…): cache-first
-  if (/\.(?:js|css|svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|mp3|mp4)$/i.test(url.pathname)) {
+  // 3) U?OUOU,??OU?OUO fingerprinted (js/css/svg/etc)
+  const isAsset = /\.(?:js|css|svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|mp3|mp4)$/i.test(url.pathname);
+  if (isAsset) {
+    const isJs = url.pathname.endsWith('.js');
+    if (isJs) {
+      e.respondWith((async () => {
+        try {
+          const net = await fetch(req, { cache: 'no-store' });
+          const ct = (net.headers.get('content-type') || '').toLowerCase();
+          if (net.ok && (ct.includes('javascript') || ct.includes('text/javascript'))) {
+            const copy = net.clone();
+            try { const c = await caches.open(CACHE); await c.put(req, copy); } catch {}
+            return net;
+          }
+        } catch {}
+        const cached = await caches.match(req);
+        if (cached) return cached;
+        return fetch(req);
+      })());
+      return;
+    }
     e.respondWith(
       caches.match(req).then(res => res || fetch(req).then(net => {
         const copy = net.clone();
@@ -61,3 +80,4 @@ self.addEventListener('fetch', (e) => {
     );
   }
 });
+

@@ -11,7 +11,7 @@ export default function WitchBackground({ dark = false }) {
     const ctx = cvs.getContext("2d", { alpha: true });
 
     let w = 0, h = 0;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(1.25, window.devicePixelRatio || 1);
 
     const resize = () => {
       w = window.innerWidth;
@@ -78,7 +78,16 @@ export default function WitchBackground({ dark = false }) {
     window.addEventListener("click", onClickSmoke);
 
     let raf = 0;
+    const frameInterval = 1000 / 30; // cap at ~30fps
+    let lastFrame = 0;
     const draw = () => {
+      const now = performance.now();
+      if (now - lastFrame < frameInterval) {
+        raf = requestAnimationFrame(draw);
+        return;
+      }
+      lastFrame = now;
+
       ctx.clearRect(0, 0, w, h);
 
       // particles
@@ -190,7 +199,7 @@ export default function WitchBackground({ dark = false }) {
             : `radial-gradient(600px 400px at 20% 15%, rgba(220,220,255,.35), transparent 60%),
                radial-gradient(1400px 1000px at 50% 100%, rgba(140,100,180,.3), transparent 70%),
                linear-gradient(180deg, #2d1b4e, #4a2d6b 40%, #5e3d7f 70%, #3d2456)`,
-          backgroundAttachment: "fixed",
+          backgroundAttachment: "scroll",
         }}
       />
 

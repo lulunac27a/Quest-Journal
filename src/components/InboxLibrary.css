@@ -1,0 +1,26 @@
+/* Inbox Library (Templates + Quick Notes) */
+
+.inbox-lib{ display:grid; gap:12px; }
+.inbox-row{ display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+.inbox-col{ flex:1 1 360px; min-width:280px; }
+
+.tpl-editor, .tpl-list, .inbox-notes{ border:1px solid var(--border); border-radius:12px; padding:10px; background: var(--card); }
+.tpl-editor .row{ display:flex; gap:8px; flex-wrap:wrap; }
+.tpl-editor input[type="text"], .tpl-editor input[type="number"], .tpl-editor select, .tpl-editor textarea{ height:36px; padding:0 10px; border:1px solid var(--border); border-radius:8px; }
+.tpl-editor textarea{ min-height:64px; resize:vertical; padding:8px 10px; height:auto; }
+.tpl-editor .actions{ display:flex; gap:8px; justify-content:flex-end; }
+
+.tpl-card{ border:1px solid var(--border); border-radius:10px; padding:8px; display:grid; gap:6px; background: color-mix(in srgb, var(--card) 96%, transparent); }
+.tpl-card-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.tpl-card-title{ font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tpl-card-meta{ font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:center; }
+.tpl-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap:8px; }
+.tpl-actions{ display:flex; gap:6px; flex-wrap:wrap; }
+
+.inbox-notes .n-input textarea{ width:100%; min-height:64px; resize:vertical; padding:8px 10px; border:1px solid var(--border); border-radius:10px; }
+.inbox-notes .n-actions{ display:flex; gap:6px; justify-content:flex-end; }
+.inbox-notes .n-list{ display:grid; gap:8px; max-height:240px; overflow:auto; }
+.inbox-notes .n-item{ border:1px solid var(--border); border-radius:10px; padding:8px; }
+.inbox-notes .n-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:12px; color:var(--muted); }
+
+.mono{ font-variant-numeric: tabular-nums; }

@@ -1,11 +1,13 @@
 // src/components/CalendarTab.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import EventBlock from "./CalendarTab.EventBlock.jsx";
 import "./Calendar.css";
 import { useCalendarLayout } from "../hooks/useCalendarLayout.js";
 import { uid } from "../utils/constants.js";
 import usePointerDrag from "../hooks/usePointerDrag.js";
 import { XPWizard } from "./AddTaskBar.jsx";
 import XPAllocateModal from "./XPAllocateModal.jsx";
+import { useCalendarTabState } from "../app/state/useCalendarTabState.js";
 
 function fmtTime(d) {
   try {
@@ -42,6 +44,23 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
   const wrapRef = useRef(null);
   const rootRef = useRef(null);
   const [editorAdvanced, setEditorAdvanced] = useState(false);
+  const [isCompactWeek, setIsCompactWeek] = useState(false);
+
+  const weekStride = isCompactWeek ? 3 : 7;
+
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia("(max-width: 520px)");
+      const onChange = () => setIsCompactWeek(!!mq.matches);
+      onChange();
+      if (mq.addEventListener) mq.addEventListener("change", onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+      return () => {
+        if (mq.removeEventListener) mq.removeEventListener("change", onChange);
+        else if (mq.removeListener) mq.removeListener(onChange);
+      };
+    } catch {}
+  }, []);
 
   const { hourHeight, slotH, yOf, heightOf, startOfDay, addMinutes, clampToSlot } = useCalendarLayout({ hourHeight: 44 });
 
@@ -50,6 +69,13 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
     const d = new Date(cursor); const day = (d.getDay() + 6) % 7; d.setDate(d.getDate() - day); d.setHours(0,0,0,0); return d;
   }, [cursor]);
   const weekDays = useMemo(() => [...Array(7)].map((_, i) => addMinutes(weekStart, i*24*60)), [weekStart, addMinutes]);
+  const msInDay = 24 * 60 * 60 * 1000;
+  const visibleWeekDays = useMemo(() => {
+    if (view !== "week" || !isCompactWeek) return weekDays;
+    const dayIdx = Math.max(0, Math.floor((cursor.getTime() - weekStart.getTime()) / msInDay));
+    const chunkStart = Math.min(Math.floor(dayIdx / weekStride) * weekStride, Math.max(0, weekDays.length - weekStride));
+    return weekDays.slice(chunkStart, chunkStart + weekStride);
+  }, [view, isCompactWeek, weekDays, cursor, weekStart, weekStride, msInDay]);
 
   const dayStart = useMemo(() => { const d = new Date(cursor); d.setHours(0,0,0,0); return d; }, [cursor]);
   // XP conversion flow state
@@ -203,9 +229,11 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
       if (view === 'day') {
         baseDay = dayStart;
       } else {
-        const colW = (width - 52 - (8*6)) / 7; // rough (52px hour col + gaps)
-        const dayIdx = Math.min(6, Math.max(0, Math.floor((relX - 52) / (colW + 8))));
-        baseDay = addMinutes(weekStart, dayIdx * 24 * 60);
+        const colGap = 8;
+        const dayCount = isCompactWeek ? Math.max(1, visibleWeekDays.length) : 7;
+        const colW = (width - 52 - (colGap * Math.max(0, dayCount - 1))) / dayCount; // rough (52px hour col + gaps)
+        const dayIdx = Math.min(dayCount - 1, Math.max(0, Math.floor((relX - 52) / (colW + colGap))));
+        baseDay = isCompactWeek ? (visibleWeekDays[dayIdx] || weekStart) : addMinutes(weekStart, dayIdx * 24 * 60);
       }
       const s = clampToSlot(addMinutes(startOfDay(baseDay), Math.max(0, Math.round(y0 / slotH) * 30)));
       const e2 = clampToSlot(addMinutes(startOfDay(baseDay), Math.max(30, Math.round(y1 / slotH) * 30)));
@@ -455,9 +483,12 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
   }
 
   function renderWeek() {
+    const daysToRender = isCompactWeek ? visibleWeekDays : weekDays;
+    const dayCount = Math.max(1, daysToRender.length || 0);
     const hours = [...Array(24)].map((_, h) => `${h}:00`);
+    const gridCols = { gridTemplateColumns: `52px repeat(${dayCount}, 1fr)` };
     // Compute events per day
-    const byDay = weekDays.map((d, idx) => {
+    const byDay = daysToRender.map((d) => {
       const dayEnd = addMinutes(startOfDay(d), 24*60);
       const evs = blocks.filter(ev => ev.s >= startOfDay(d) && ev.s < dayEnd);
       // naive overlap packing by sorting start times
@@ -476,17 +507,17 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
     return (
       <div>
         {/* Weekday labels */}
-        <div className="allday-row" style={{ marginBottom: 6 }}>
+        <div className="allday-row" style={{ marginBottom: 6, ...gridCols }}>
           <div></div>
-          {weekDays.map((d, i) => (
+          {daysToRender.map((d, i) => (
             <div key={i} style={{ padding: 4, textAlign: 'center', fontWeight: 600 }}>
               {dayLabel(d)}
             </div>
           ))}
         </div>
-        <div className="allday-row">
+        <div className="allday-row" style={gridCols}>
           <div></div>
-          {weekDays.map((d, i) => (
+          {daysToRender.map((d, i) => (
             <div className="allday-cell" key={i} title={dayLabel(d)}>
               {/* due-date chips (read-only) */}
               {(tasks||[]).filter(t => !t.deleted && t.deadline && new Date(t.deadline).toDateString() === d.toDateString()).slice(0,3).map(t => (
@@ -502,6 +533,7 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
 
         <div
           className="week-grid"
+          style={gridCols}
           ref={wrapRef}
           onPointerDown={drag.onPointerDown}
           onPointerMove={drag.onPointerMove}
@@ -527,7 +559,7 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
                   // Double-click: create a 30m event at click position
                   const rect = e.currentTarget.getBoundingClientRect();
                   const relY = e.clientY - rect.top;
-                  const baseDay = addMinutes(weekStart, dayIdx * 24 * 60);
+                  const baseDay = daysToRender[dayIdx] || addMinutes(weekStart, dayIdx * 24 * 60);
                   const s = clampToSlot(addMinutes(startOfDay(baseDay), Math.max(0, Math.round(relY / slotH) * 30)));
                   const e2 = clampToSlot(addMinutes(s, 30));
                   const newEv = { id: uid(), title: "New event", start: s.toISOString(), end: e2.toISOString(), allDay:false, listId: activeListId || 'inbox', color:'', repeat:'none', repeatEnds:'never', repeatUntil:'', repeatCount:0, repeatWeekdays:[], updatedAt: Date.now() };
@@ -692,10 +724,10 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
       <div className="calendar-header">
         <div className="left">
           <button className="btn" onClick={() => setCursor(new Date())}>Today</button>
-          <button className="btn" onClick={() => setCursor(d => { const x = new Date(d); if (view==='month') { x.setMonth(x.getMonth()-1); } else { x.setDate(x.getDate() - (view==='day' ? 1 : 7)); } return x; })}>Prev</button>
-          <button className="btn" onClick={() => setCursor(d => { const x = new Date(d); if (view==='month') { x.setMonth(x.getMonth()+1); } else { x.setDate(x.getDate() + (view==='day' ? 1 : 7)); } return x; })}>Next</button>
+          <button className="btn" onClick={() => setCursor(d => { const x = new Date(d); if (view==='month') { x.setMonth(x.getMonth()-1); } else { const step = view==='day' ? 1 : weekStride; x.setDate(x.getDate() - step); } return x; })}>Prev</button>
+          <button className="btn" onClick={() => setCursor(d => { const x = new Date(d); if (view==='month') { x.setMonth(x.getMonth()+1); } else { const step = view==='day' ? 1 : weekStride; x.setDate(x.getDate() + step); } return x; })}>Next</button>
           <span className="hint" style={{ marginLeft: 6 }}>
-            {(() => { try { if (view==='week') { const end=new Date(weekStart); end.setDate(end.getDate()+6); const f=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'}); return f.format(weekStart) + ' - ' + f.format(end); } if (view==='day') { const f=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric'}); return f.format(dayStart) } const f=new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric'}); return f.format(cursor) } catch { return '' } })()}
+            {(() => { try { if (view==='week') { const days = isCompactWeek ? visibleWeekDays : weekDays; const first = days[0] || weekStart; const last = days[days.length-1] || first; const f=new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'}); return f.format(first) + ' - ' + f.format(last); } if (view==='day') { const f=new Intl.DateTimeFormat(undefined,{weekday:'short',month:'short',day:'numeric'}); return f.format(dayStart) } const f=new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric'}); return f.format(cursor) } catch { return '' } })()}
           </span>
         </div><div className="right" style={{ display:'flex', alignItems:'center', gap:8 }}>
           <label className="hint" style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -920,53 +952,9 @@ export default function CalendarTab({ tasks, setTasks, activeListId, lists, cale
   );
 }
 
-function EventBlock({ ev, style, onMove, onResize, onClick, onToggleDone, onDelete, slotH = 22 }) {
-  const [dragging, setDragging] = useState(null); // 'move' | 'start' | 'end' | null
-  const startRef = useRef({ x:0, y:0 });
-  const lastRef = useRef({ x:0, y:0 });
-
-  function onDown(kind, e) {
-    e.stopPropagation();
-    setDragging(kind);
-    startRef.current = { x: e.clientX, y: e.clientY };
-    lastRef.current = { x: e.clientX, y: e.clientY };
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
-  }
-  function onMovePtr(e) {
-    if (!dragging) return;
-    const dx = e.clientX - lastRef.current.x;
-    const dy = e.clientY - lastRef.current.y;
-    lastRef.current = { x: e.clientX, y: e.clientY };
-    const deltaMin = Math.round(dy / Math.max(1, slotH)) * 30; // 30 min per slot
-    if (!deltaMin) return;
-    if (dragging === 'move') onMove?.(deltaMin);
-    else if (dragging === 'start') onResize?.('start', deltaMin);
-    else if (dragging === 'end') onResize?.('end', deltaMin);
-  }
-  function onUpPtr(e) { setDragging(null); try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {} }
-
-  return (
-    <div
-      className={`event ${ev.done ? 'done' : ''}`}
-      style={style}
-      role="button"
-      tabIndex={0}
-      onClick={(e)=>{ e.stopPropagation(); onClick?.(e); }}
-      onKeyDown={(e)=>{ if (e.key==='Delete' || e.key==='Backspace') { e.preventDefault(); e.stopPropagation(); onDelete?.(); } }}
-      onPointerDown={(e)=>onDown('move', e)}
-      onPointerMove={onMovePtr}
-      onPointerUp={onUpPtr}
-      onPointerCancel={onUpPtr}
-    >
-      <div className="handle top" onPointerDown={(e)=>onDown('start', e)} />
-      <div className="handle bot" onPointerDown={(e)=>onDown('end', e)} />
-      <div className="title" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
-        <span>{ev.title}</span>
-        {ev.kind==='task' && (
-          <input title="Mark done" type="checkbox" checked={!!ev.done} onChange={(e)=> { e.stopPropagation(); onToggleDone?.(); }} />
-        )}
-      </div>
-
-    </div>
-  );
+export function CalendarTabPanel() {
+  const props = useCalendarTabState();
+  return <CalendarTab {...props} />;
 }
+
+// moved to ./CalendarTab.EventBlock.jsx

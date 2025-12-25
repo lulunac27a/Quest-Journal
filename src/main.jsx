@@ -20,7 +20,7 @@ createRoot(document.getElementById('root')).render(
 if ('serviceWorker' in navigator) {
   if (import.meta.env.PROD) {
     const base = import.meta.env.BASE_URL || '/';
-    const SW_VERSION = 'qj-2025-10-14-01';
+    const SW_VERSION = 'qj-1.2.0-20251125-2146-999a320';
     const swPath = `${base}sw.js?v=${SW_VERSION}`;
     window.addEventListener('load', () => {
       navigator.serviceWorker.register(swPath).catch(console.warn);

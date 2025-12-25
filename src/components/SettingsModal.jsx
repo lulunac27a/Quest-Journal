@@ -1,8 +1,12 @@
 // src/components/SettingsModal.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { styles as settingsModalStyles } from "./SettingsModal.styles.js";
+import { getStatus as getSyncStatus } from "../sync/index.js";
+import SyncStatusBadge from "./SyncStatusBadge.jsx";
 import ChallengeManager from "./ChallengeManager.jsx";
 import AiConnect from "./AiConnect.jsx";
 import { uid } from "../utils/constants.js";
+import * as SocialAPI from "../api/socialClient.js";
 
 /**
  * SettingsModal
@@ -32,17 +36,52 @@ export default function SettingsModal({
   onSaveProfileName,
   onResetAccount,
   onResetCloud,
+  onEmailSignUp,
+  onEmailSignIn,
+  staySignedIn,
+  onToggleStaySignedIn,
 
   // --- اختیاری (در صورت پاس‌دادن از بیرون، بلوک Sync دستی فعال می‌شود)
-  onCloudPull,   // () => void  - Force import from cloud → local
-  onCloudPush,   // () => void  - Force export local → cloud
+  onCloudPull,   // legacy (unused)
+  onCloudPush,   // legacy (unused)
+  onBackupLocal, // () => void   - Save a full app snapshot into local storage
+  onRestoreFromLocalToCloud, // () => void - Replace cloud state with saved local snapshot
 }) {
   // appearance | challenges | account | ai | about
   const [section, setSection] = useState("appearance");
+  const restoreInputRef = useRef(null);
 
   // ensure hero name is always typeable (local fallback + sync)
   const [localName, setLocalName] = useState(profileName ?? "");
   useEffect(() => { setLocalName(profileName ?? ""); }, [profileName]);
+
+  // --- Public ID (handle)
+  const [handleInput, setHandleInput] = useState("");
+  const [handleBusy, setHandleBusy] = useState(false);
+  const [handleMsg, setHandleMsg] = useState("");
+  const [handleOk, setHandleOk] = useState(false);
+  const [authMode, setAuthMode] = useState("signup"); // signup | signin
+  const [emailInput, setEmailInput] = useState("");
+  const [passwordInput, setPasswordInput] = useState("");
+  const [authMsg, setAuthMsg] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!fbReady || !user?.uid) return;
+        const cur = await (async () => {
+          try { return await SocialAPI.getCurrentHandle?.(user.uid); } catch {}
+          return null;
+        })();
+        if (cur) {
+          setHandleInput(cur);
+          setHandleOk(true);
+          setHandleMsg("Reserved");
+        }
+      } catch {}
+    })();
+  }, [fbReady, user?.uid]);
 
   // accessibility: close on Escape
   useEffect(() => {
@@ -205,8 +244,31 @@ export default function SettingsModal({
 
         {/* AI */}
         {section === "ai" && (
-          <div className="modal-body settings-modal__body">
+          <div className="modal-body settings-modal__body" style={{ display: "grid", gap: 12 }}>
             <AiConnect />
+
+            <div className="sf-card" style={{ padding: 10 }}>
+              <div className="hint" style={{ marginBottom: 8 }}>AI mode</div>
+              <div className="settings-chiprow">
+                {[
+                  { id: "explanatory", label: "Explanatory" },
+                  { id: "encouraging", label: "Encouraging" },
+                  { id: "literary", label: "Literary" },
+                  { id: "epic", label: "Epic" },
+                ].map((m) => (
+                  <button
+                    key={m.id}
+                    className={`btn ${(settings.aiMode || 'epic') === m.id ? "primary" : ""}`}
+                    onClick={() => setSettings((s) => ({ ...s, aiMode: m.id }))}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+              <div className="hint" style={{ marginTop: 6 }}>
+                Chooses the style used for ✨ AI story on tasks.
+              </div>
+            </div>
           </div>
         )}
 
@@ -243,10 +305,113 @@ export default function SettingsModal({
                           <button className="btn" onClick={onSignOut}>Sign out</button>
                         </>
                       ) : (
-                        <button className="btn primary" onClick={onSignIn}>Sign in with Google</button>
+                        <button
+                          className="btn primary"
+                          onClick={onSignIn}
+                          disabled={cloudBusy}
+                        >
+                          Sign in with Google
+                        </button>
                       )}
                     </div>
                   </div>
+                  <div className="settings-row wrap" style={{ marginTop: 12, gap: 8 }}>
+                    <label className="hint" style={{ minWidth: 100 }}>Stay signed in</label>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <input
+                        type="checkbox"
+                        checked={!!staySignedIn}
+                        onChange={(e) => onToggleStaySignedIn?.(e.target.checked)}
+                      />
+                      <span className="hint" style={{ color: "var(--text-muted)" }}>
+                        Keep me signed in on this device
+                      </span>
+                    </label>
+                  </div>
+                  {!user && (
+                    <div className="email-auth" style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          className={`btn ${authMode === "signup" ? "primary" : ""}`}
+                          onClick={() => setAuthMode("signup")}
+                          disabled={authBusy}
+                        >
+                          Sign up
+                        </button>
+                        <button
+                          type="button"
+                          className={`btn ${authMode === "signin" ? "primary" : ""}`}
+                          onClick={() => setAuthMode("signin")}
+                          disabled={authBusy}
+                        >
+                          Sign in
+                        </button>
+                      </div>
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          setAuthMsg("");
+                          setAuthBusy(true);
+                          try {
+                            if (authMode === "signup") {
+                              if (typeof onEmailSignUp !== "function") throw new Error("Email sign-up unavailable");
+                              await onEmailSignUp(emailInput, passwordInput);
+                              setAuthMsg("Account created.");
+                            } else {
+                              if (typeof onEmailSignIn !== "function") throw new Error("Email sign-in unavailable");
+                              await onEmailSignIn(emailInput, passwordInput);
+                              setAuthMsg("");
+                            }
+                          } catch (err) {
+                            setAuthMsg(err?.message || "Action failed");
+                          } finally {
+                            setAuthBusy(false);
+                          }
+                        }}
+                        style={{ display: "grid", gap: 6 }}
+                      >
+                        <div className="settings-row wrap">
+                          <label className="hint" style={{ minWidth: 100 }}>Email</label>
+                          <input
+                            type="email"
+                            className="settings-text"
+                            required
+                            value={emailInput}
+                            onChange={(e) => setEmailInput(e.target.value)}
+                            placeholder="you@example.com"
+                            disabled={authBusy}
+                          />
+                        </div>
+                        <div className="settings-row wrap">
+                          <label className="hint" style={{ minWidth: 100 }}>Password</label>
+                          <input
+                            type="password"
+                            className="settings-text"
+                            required
+                            value={passwordInput}
+                            onChange={(e) => setPasswordInput(e.target.value)}
+                            placeholder="********"
+                            disabled={authBusy}
+                          />
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <button className="btn primary" type="submit" disabled={authBusy}>
+                            {authMode === "signup" ? "Create account" : "Sign in"}
+                          </button>
+                          {authBusy && <span className="hint">Processing...</span>}
+                        </div>
+                        {authMsg && (
+                          <div
+                            className="hint"
+                            style={{ color: authMsg.toLowerCase().includes("fail") ? "#b91c1c" : "var(--text-muted)" }}
+                          >
+                            {authMsg}
+                          </div>
+                        )}
+                      </form>
+                    </div>
+                  )}
                   {cloudError && (
                     <div className="hint" style={{ color: "#b91c1c", marginTop: 8 }}>{cloudError}</div>
                   )}
@@ -284,24 +449,113 @@ export default function SettingsModal({
                   </div>
                 </div>
 
-                {/* Manual Cloud Sync (optional, only if handlers are provided) */}
-                {(typeof onCloudPull === "function" || typeof onCloudPush === "function") && user && (
+                {/* Public ID (handle) */}
+                <div className="sf-card" style={{ padding: 12 }}>
+                  <div style={{ marginBottom: 8 }}>
+                    <b>Public ID</b>
+                    <div className="hint">Choose a unique ID so friends can find you. 3–20 chars, letters/numbers/underscore.</div>
+                  </div>
+
+                  {!user && (
+                    <div className="hint" style={{ color: "var(--text-muted)" }}>Sign in to claim an ID.</div>
+                  )}
+
+                  <div className="settings-row wrap">
+                    <label htmlFor="heroId" className="hint" style={{ minWidth: 100 }}>ID</label>
+                    <input
+                      id="heroId"
+                      type="text"
+                      value={handleInput}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setHandleInput(SocialAPI.sanitize(v));
+                        setHandleOk(false);
+                        setHandleMsg("");
+                      }}
+                      placeholder="e.g., aria_brv"
+                      className="settings-text"
+                      disabled={!user}
+                    />
+                    <button
+                      className="btn"
+                      type="button"
+                      disabled={!user || handleBusy || !handleInput}
+                      onClick={async () => {
+                        setHandleBusy(true); setHandleMsg(""); setHandleOk(false);
+                        try {
+                          const v = SocialAPI.validate(handleInput);
+                          if (!v.ok) { setHandleMsg(v.reason === 'length' ? 'Use 3–20 characters' : 'Invalid characters'); return; }
+                          const r = await SocialAPI.isAvailable(handleInput);
+                          if (r.available) { setHandleOk(true); setHandleMsg("Available"); }
+                          else { setHandleOk(false); setHandleMsg("Taken"); }
+                        } catch (e) {
+                          setHandleMsg(e?.message || 'Error');
+                        } finally { setHandleBusy(false); }
+                      }}
+                    >
+                      Check
+                    </button>
+                    <button
+                      className="btn primary"
+                      type="button"
+                      disabled={!user || handleBusy || !handleInput}
+                      onClick={async () => {
+                        setHandleBusy(true); setHandleMsg("");
+                        try {
+                          await SocialAPI.claimHandle(user.uid, handleInput);
+                          setHandleOk(true);
+                          setHandleMsg("Reserved");
+                        } catch (e) {
+                          setHandleOk(false);
+                          setHandleMsg(e?.message || 'Failed');
+                        } finally { setHandleBusy(false); }
+                      }}
+                    >
+                      Save ID
+                    </button>
+                  </div>
+                  {handleMsg && (
+                    <div className="hint" style={{ marginTop: 6, color: handleOk ? 'var(--success,#16a34a)' : 'var(--text-muted,#888)' }}>{handleMsg}</div>
+                  )}
+                </div>
+
+                {/* Backup / Restore (local ↔ cloud) */}
+                {user && (
                   <div className="sf-card" style={{ padding: 12 }}>
-                    <b>Cloud sync</b>
-                    <div className="hint" style={{ margin: "6px 0" }}>
-                      Use these if your data looks out of date on this device.
+                    <div className="settings-row" style={{ marginBottom: 6 }}>
+                      <b>Backup & Restore</b>
+                      <SyncStatusBadge />
                     </div>
                     <div className="settings-row wrap">
-                      {typeof onCloudPull === "function" && (
-                        <button className="btn" onClick={() => onCloudPull?.()} disabled={cloudBusy}>
-                          Force import from cloud
-                        </button>
-                      )}
-                      {typeof onCloudPush === "function" && (
-                        <button className="btn" onClick={() => onCloudPush?.()} disabled={cloudBusy}>
-                          Force export to cloud
-                        </button>
-                      )}
+                      <button
+                        className="btn"
+                        disabled={cloudBusy}
+                        onClick={() => { try { onBackupLocal?.(); } catch {} }}
+                        title="Download a full app snapshot as a file"
+                      >
+                        download backup
+                      </button>
+                      <button
+                        className="btn"
+                        disabled={cloudBusy}
+                        onClick={() => { try { restoreInputRef.current?.click(); } catch {} }}
+                        title="Select a backup file to replace the cloud state"
+                      >
+                        restore from backup file
+                      </button>
+                      <input
+                        ref={restoreInputRef}
+                        type="file"
+                        accept="application/json"
+                        style={{ display: "none" }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            try { onRestoreFromLocalToCloud?.(file); } catch {}
+                          }
+                          if (e.target) e.target.value = "";
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -310,37 +564,23 @@ export default function SettingsModal({
                 <div className="sf-card" style={{ padding: 12 }}>
                   <b>Danger zone</b>
                   <div className="hint" style={{ margin: "6px 0" }}>
-                    Reset local data (lists, tasks, xp, settings). This cannot be undone.
+                    Reset EVERYTHING for this account (cloud + local: lists, tasks, XP, achievements, settings). This cannot be undone.
                   </div>
                   <button
                     className="btn"
                     onClick={() => {
-                      if (confirm("Reset local account data? This removes all local lists, tasks, and settings.")) {
-                        onResetAccount?.();
+                      const msg = user
+                        ? "Reset account and cloud data? This removes all local and cloud lists, tasks, XP and settings."
+                        : "Reset account data on this device?";
+                      if (confirm(msg)) {
+                        // Use unified reset (hardResetAccount already clears cloud when signed in)
+                        onResetCloud?.();
                         onClose?.();
                       }
                     }}
                   >
-                    Reset account
+                    Reset account (cloud + local)
                   </button>
-                  {fbReady && user && (
-                    <div style={{ marginTop: 8 }}>
-                      <div className="hint" style={{ margin: "6px 0" }}>
-                        Replace your cloud copy with factory defaults for this account.
-                      </div>
-                      <button
-                        className="btn"
-                        disabled={cloudBusy}
-                        onClick={() => {
-                          if (confirm("Reset cloud data for this account? This replaces the remote copy with defaults.")) {
-                            onResetCloud?.();
-                          }
-                        }}
-                      >
-                        Reset cloud data
-                      </button>
-                    </div>
-                  )}
                 </div>
               </>
             )}
@@ -357,90 +597,7 @@ export default function SettingsModal({
         )}
 
         {/* Scoped responsive styles to prevent horizontal scroll on mobile */}
-        <style>{`
-          .settings-modal {
-            width: min(720px, 96vw);
-            max-height: min(86vh, 100dvh - 32px);
-            overflow: hidden;             /* hide any accidental overflow */
-            overflow-y: auto;             /* vertical scroll only */
-            box-sizing: border-box;
-          }
-          .settings-modal__header { gap: 8px; }
-          .settings-modal__tabs {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px 10px;
-          }
-          .settings-modal__tabs .tab {
-            flex: 1 1 140px;              /* wrap gracefully on small screens */
-            text-align: center;
-            white-space: nowrap;
-          }
-          .settings-modal__body {
-            overflow-wrap: anywhere;      /* long words/URLs won't force overflow */
-          }
-
-          /* generic responsive row used across sections */
-          .settings-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            min-width: 0;
-            flex-wrap: nowrap;
-          }
-          .settings-row.wrap { flex-wrap: wrap; }
-
-          .settings-row__left {
-            display: flex; align-items: center; gap: 12px; min-width: 0;
-          }
-          .settings-row__right {
-            display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
-          }
-
-          .settings-text {
-            flex: 1 1 240px;
-            min-width: 0;                 /* allow shrink inside flex row */
-            width: auto;
-          }
-
-          .settings-avatar {
-            width: 36px; height: 36px; border-radius: 999px;
-            object-fit: cover;
-            background: var(--border);
-            display: grid; place-items: center; font-size: 14px; opacity: .9;
-          }
-          .settings-avatar.ph { background: var(--border); }
-
-          .settings-chiprow {
-            display: flex; gap: 8px; flex-wrap: wrap;
-          }
-
-          /* Mobile hardening */
-          @media (max-width: 900px){
-            .settings-modal {
-              width: calc(100vw - 24px);  /* safe gutters on both sides */
-              max-width: 100vw;
-              border-radius: 12px;
-              margin: 0;
-            }
-            .settings-modal__tabs .tab {
-              flex: 1 1 45%;
-            }
-            .settings-row {
-              flex-wrap: wrap;             /* stack controls when narrow */
-            }
-            .settings-row__right {
-              width: 100%;
-              justify-content: flex-end;
-            }
-          }
-
-          @media (max-width: 480px){
-            .settings-modal { width: calc(100vw - 16px); border-radius: 10px; }
-            .settings-modal__tabs .tab { flex: 1 1 100%; }
-          }
-        `}</style>
+        <style>{settingsModalStyles}</style>
       </div>
     </div>
   );

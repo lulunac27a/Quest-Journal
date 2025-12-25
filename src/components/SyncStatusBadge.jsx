@@ -21,7 +21,7 @@ export default function SyncStatusBadge() {
   useEffect(() => {
     let off = () => {};
     try { off = onStatus((s) => setStatus(s || { state: "idle", error: "" })); } catch {}
-    const t = setInterval(() => setStatus((s) => ({ ...s })), 1000); // tick to refresh "ago"
+    const t = setInterval(() => setStatus((s) => ({ ...s })), 1000);
     const t2 = setInterval(() => setUser((u) => (getUser?.() || u || null)), 5000);
     return () => { try { off(); } catch {}; clearInterval(t); clearInterval(t2); };
   }, []);
@@ -34,6 +34,9 @@ export default function SyncStatusBadge() {
     }
     if (st === "disabled") {
       return { label: "Sync off", color: "#64748b", hint: "Firebase disabled" };
+    }
+    if (st === "offline") {
+      return { label: "Offline", color: "#f59e0b", hint: "No network" };
     }
     if (hasError) {
       return { label: "Sync error", color: "var(--danger)", hint: String(status.error || "Error") };
@@ -54,7 +57,7 @@ export default function SyncStatusBadge() {
       onClick={() => { try { flushNow?.(); } catch {} }}
     >
       <span className="sync-dot" style={{ background: color }} aria-hidden />
-      <span className="sync-text mono">{label}{user ? (ago ? ` · ${ago}` : "") : ""}</span>
+      <span className="sync-text mono">{label}{user ? (ago ? ` • ${ago}` : "") : ""}</span>
     </button>
   );
 }

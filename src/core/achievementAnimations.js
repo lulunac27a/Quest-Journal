@@ -55,6 +55,36 @@ export const ACHIEVEMENT_ANIMATIONS = {
     url: lifeUrl,
     message: "It's a beautiful day, huh? Don't let it slip away!",
   },
+
+  // Journal achievements
+  "First Page": {
+    url: moneyTreeUrl,
+    message: "You opened your journal. First step of many!",
+  },
+  "Daily Scribe": {
+    url: campFireUrl,
+    message: "Two days in a row — the story grows.",
+  },
+  "Inked Five": {
+    url: synthRunnerUrl,
+    message: "Five-day streak — the ink is flowing!",
+  },
+  "Week of Words": {
+    url: catUrl,
+    message: "A full week of writing. Keep the flame alive!",
+  },
+  "Fortnight Scribe": {
+    url: magicianUrl,
+    message: "Fourteen days — habits forged in ink.",
+  },
+  "Ten-Thousand Words": {
+    url: nostradamusUrl,
+    message: "10,000 words — your saga takes shape.",
+  },
+  "Twenty-Thousand Words": {
+    url: lifeUrl,
+    message: "20,000 words — an epic in motion!",
+  },
 };
 
 /**

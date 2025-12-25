@@ -20,11 +20,12 @@ import { duePayouts, computeParentBoost } from "./gamify.js";
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers: today stats (daily counters)
 function todayISO() { return new Date().toISOString().slice(0, 10); }
+import { getJSON as getJSONu, setJSON as setJSONu } from "./userLocal.js";
 function statsKeyFor(dateISO) { return `qj_stats_today_${dateISO}`; }
 function readTodayStats() {
   const key = statsKeyFor(todayISO());
   try {
-    return JSON.parse(localStorage.getItem(key) || "null") || {
+    return getJSONu(key, null) || {
       doneTasks: 0,
       activeMinutes: 0,
       doneByBranch: {},
@@ -35,7 +36,7 @@ function readTodayStats() {
 }
 function writeTodayStats(stats) {
   const key = statsKeyFor(todayISO());
-  try { localStorage.setItem(key, JSON.stringify(stats)); } catch {}
+  try { setJSONu(key, stats); } catch {}
 }
 
 // ≥50% rule (kept)

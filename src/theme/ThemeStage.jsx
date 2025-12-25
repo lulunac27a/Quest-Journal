@@ -1,5 +1,6 @@
 // src/theme/ThemeStage.jsx
 import { useEffect, useMemo } from "react";
+import "./theme-fonts.css";
 
 import FairyStage   from "./fairy/FairyStage.jsx";
 import MistyStage   from "./misty/MistyStage.jsx";
@@ -21,6 +22,11 @@ export default function ThemeStage({ activeSkin, blockRect, dark }) {
     document.documentElement.classList.add("stage-on");
     return () => document.documentElement.classList.remove("stage-on");
   }, []);
+
+  useEffect(() => {
+    if (activeSkin) document.documentElement.dataset.skin = activeSkin;
+    return () => { document.documentElement.dataset.skin = ""; };
+  }, [activeSkin]);
 
   const Stage = useMemo(() => {
     switch (activeSkin) {

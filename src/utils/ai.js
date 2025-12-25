@@ -162,27 +162,61 @@ export async function askAIStream({ model, messages, temperature = 0.8, reasonin
 
 import { loadProfile } from "../core/profile.js";
 
-export async function epicifyTask(title, notes = "", opts = {}) {
+function buildStoryMessages(mode, { title, notes, heroName }) {
+  const hero = heroName ? `\nHero: ${heroName}` : "";
+  const common = `Task title: "${title}"\nNotes: ${notes || "-"}${hero}`;
+  switch ((mode || "epic").toLowerCase()) {
+    case "explanatory":
+    case "planner":
+    case "plan": {
+      const system = "You are an expert planning assistant. Write a concise, practical plan (60-80 words) to execute the user's task. Use clear, simple language. Break the work into small steps and call out likely blockers and how to remove them. Avoid fluff and greetings.";
+      const user = `${common}\nDeliverable: One short paragraph that lists small steps and mentions key obstacles and how to unblock them.`;
+      return { system, user, temperature: 0.6 };
+    }
+    case "encouraging":
+    case "cheer":
+    case "motivate": {
+      const system = "You are a supportive coach. Write a short, upbeat encouragement message (60-80 words) tailored to the user's task. Be specific, actionable, and warm; include 1-2 concrete suggestions to get started now. Keep it human and sincere.";
+      const user = `${common}\nStyle: friendly, specific, energizing. Include a 'first step' suggestion.`;
+      return { system, user, temperature: 0.9 };
+    }
+    case "literary":
+    case "poetic":
+    case "prose": {
+      const system = "You are a literary stylist. Describe the user's task in a vivid, poetic yet clear prose vignette (60-80 words). Keep it elegant and inspiring, not archaic. No rhymes or bullet points. Prefer sensory imagery and metaphors while staying faithful to the task.";
+      const user = `${common}\nTone: elegant modern prose, uplifting, imagistic; avoid purple prose.`;
+      return { system, user, temperature: 0.85 };
+    }
+    case "epic":
+    default: {
+      const system = "You are a Modern bard AI. Write a short, punchy, heroic vignette (60-80 words) about the user's quest. No bullet points. If a hero name is provided, address or reference them naturally.";
+      const user = `${common}\nTone: Modern epic fantasy, adventurous, motivational, no archaic diction.`;
+      return { system, user, temperature: 0.9 };
+    }
+  }
+}
+
+export async function storyForTask(mode, title, notes = "", opts = {}) {
   const profile = (() => { try { return loadProfile() || {}; } catch { return {}; } })();
   const heroName = (opts?.authorName || profile?.name || "").toString().trim();
-  const sys =
-    "You are a Modern bard AI. Write a short, punchy, heroic vignette (70-90 words) about the user's quest. No bullet points. If a hero name is provided, address or reference them naturally.";
-  const user =
-    `Task title: "${title}"\nNotes: ${notes || "-"}${heroName ? `\nHero: ${heroName}` : ""}\nTone: Modern epic fantasy, adventurous, motivational, no archaic diction.`;
-
+  const spec = buildStoryMessages(mode, { title, notes, heroName });
   const payload = {
     model: opts?.model,
     messages: [
-      { role: "system", content: sys },
-      { role: "user", content: user },
+      { role: "system", content: spec.system },
+      { role: "user", content: spec.user },
     ],
-    temperature: 0.9,
+    temperature: spec.temperature,
   };
   if (opts?.stream) {
     return await askAIStream({ ...payload, onToken: opts.onToken });
   }
-  const out = await askAI(payload);
-  return out;
+  return await askAI(payload);
+}
+
+// Backward compatibility: keep epicifyTask using the new engine
+export async function epicifyTask(title, notes = "", opts = {}) {
+  return storyForTask("epic", title, notes, opts);
 }
 
 // Image: Prefer BYOK direct; otherwise fall back to local proxy (quota, formats)

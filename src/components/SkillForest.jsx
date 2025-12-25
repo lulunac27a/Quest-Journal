@@ -73,7 +73,7 @@ const TREES = {
     color: XP_META.TRADE.color,
     label: "Trade",
     nodes: [
-      { id: "trd_haggler", label: "Haggler", x: 15, y: 70, req: { branch: BR.TRADE, at: 5 },  icon: "🪙" },
+      { id: "trd_haggler", label: "Haggler", x: 15, y: 70, req: { branch: BR.TRADE, at: 5 },  icon: "💰" },
       { id: "trd_broker",  label: "Broker",  x: 50, y: 50, req: { branch: BR.TRADE, at: 12 }, icon: "💼" },
       { id: "trd_magnate", label: "Magnate", x: 85, y: 30, req: { branch: BR.TRADE, at: 20 }, icon: "👑" },
     ],
@@ -265,4 +265,3 @@ export default function SkillForest({ profileVersion }) {
     </div>
   );
 }
-

@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { todayStr } from "../core/challenges.js";
 import SkillForest from "./SkillForest.jsx";
+import { useStoryTabState } from "../app/state/useStoryTabState.js";
 
 /**
  * StoryTab
@@ -172,4 +173,9 @@ export default function StoryTab({ level, tasks, origin, setOrigin, profileVersi
       <SkillForest key={profileVersion ?? "skillforest"} profileVersion={profileVersion} />
     </div>
   );
+}
+
+export function StoryTabPanel() {
+  const props = useStoryTabState();
+  return <StoryTab {...props} />;
 }

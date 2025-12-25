@@ -2,12 +2,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
 export default function ScholarStage({ dark = false }) {
-  // فونت سراسری
-  useEffect(() => {
-    const prev = document.body.style.fontFamily;
-    document.body.style.fontFamily = '"Cormorant Garamond", "Times New Roman", serif';
-    return () => { document.body.style.fontFamily = prev; };
-  }, []);
 
   /* ===================== Canvas نوشتن/نقاشی (فقط لایت) ===================== */
   const drawRef = useRef(null);
@@ -18,7 +12,7 @@ export default function ScholarStage({ dark = false }) {
     if (!cvs) return;
     const ctx = cvs.getContext("2d", { alpha: true });
 
-    let w = 0, h = 0, dpr = Math.min(2, window.devicePixelRatio || 1);
+    let w = 0, h = 0, dpr = Math.min(1.25, window.devicePixelRatio || 1);
     const resize = () => {
       w = innerWidth; h = innerHeight;
       cvs.width = Math.floor(w * dpr);
@@ -88,6 +82,10 @@ export default function ScholarStage({ dark = false }) {
     }
 
     const drawAll = () => {
+      if (document.hidden) {
+        raf = requestAnimationFrame(drawAll);
+        return;
+      }
       ctx.clearRect(0, 0, w, h);
       if (!dark) {
         const now = performance.now();
@@ -176,6 +174,10 @@ export default function ScholarStage({ dark = false }) {
     }
 
     function tick() {
+      if (document.hidden) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
       const now = performance.now();
       hotspots.forEach((h, i) => {
         // اگر هنوز در نگه‌داری هستیم → دوبرابر، بعد نرم به پایه برگردد
@@ -266,7 +268,7 @@ export default function ScholarStage({ dark = false }) {
           backgroundBlendMode: dark
             ? "normal, normal"
             : "overlay, multiply, normal, multiply, normal, normal",
-          backgroundAttachment: "fixed",
+          backgroundAttachment: "scroll",
         }}
       />
 

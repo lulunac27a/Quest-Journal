@@ -95,8 +95,6 @@ export function useCloudSync({ applyRemote } = {}) {
       getLocalSnapshotRef.current = getLocalSnapshot;
       // اگر موتور API ثبت getter دارد، بده به آن:
       try { sync.setLocalSnapshotGetter?.(getLocalSnapshot); } catch {}
-      // برای سازگاری کامل، روی window هم بگذاریم (اگر موتور بخواهد بردارد)
-      try { window.__qj_getLocalSnapshot = getLocalSnapshot; } catch {}
     }
     // به موتور بگو لوکال تغییر کرده (خود موتور اگر debounce دارد انجام می‌دهد)
     try { sync.notifyLocalChange?.(); }
@@ -111,7 +109,12 @@ export function useCloudSync({ applyRemote } = {}) {
     user:  user || null,
     busy:  BUSY_STATES.has(status?.state),     // از روی state، وضعیت مشغول/آماده را بساز
     error: status?.error || "",
-    signIn:  () => { try { return sync.signIn?.(); } catch {} },
+    signIn:  async () => {
+      // Avoid double-triggering; auth handles redirect fallback when needed
+      if (status?.state === "signing-in") return;
+      try { await sync.signIn?.(); }
+      catch {}
+    },
     signOut: () => { try { return sync.signOutNow?.(); } catch {} },
     pushLocal,
   }), [user, status, pushLocal]);

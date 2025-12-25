@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "739372066129",
+    "project_id": "quest-journal-aa356",
+    "storage_bucket": "quest-journal-aa356.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:739372066129:android:67ed8ae467d8562317df70",
+        "android_client_info": {
+          "package_name": "com.questjournal.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "739372066129-oh3hh45143kagbik0ua9jfqd5g3qcp50.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtQFdfClTf4OZawdMiVB5TwZyve_iiZBE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "739372066129-oh3hh45143kagbik0ua9jfqd5g3qcp50.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

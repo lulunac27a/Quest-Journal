@@ -1,7 +1,7 @@
 // src/components/AchievementsHall.jsx
 // Full achievements hall with filters/search/sort/grouping
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ACH_CATALOG } from "../core/achievements.js";
 import { PERK_RULES } from "../core/perkRules.data.js";
 import { loadMultiXP, XP_META } from "../core/multixp.js";
@@ -25,6 +25,7 @@ const TYPE_LABEL = {
   strength: "Strength",
   trade: "Trade",
   athletics: "Athletics",
+  journal: "Journal",
   daily: "Daily",
   weekly: "Weekly",
   evergreen: "All-Time",
@@ -201,6 +202,19 @@ export default function AchievementsHall({ ach }) {
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortBy, setSortBy] = useState("tier"); // tier|recent|alpha
   const [showLocked, setShowLocked] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(false);
+
+  useEffect(() => {
+    try {
+      const mq = window.matchMedia("(max-width: 720px)");
+      const sync = () => setIsNarrow(!!mq.matches);
+      sync();
+      mq.addEventListener?.("change", sync);
+      return () => mq.removeEventListener?.("change", sync);
+    } catch {
+      setIsNarrow(false);
+    }
+  }, []);
 
   const perkTiers = usePerkTiers();
 
@@ -298,7 +312,7 @@ export default function AchievementsHall({ ach }) {
   // Grouping for UI
   const sections = useMemo(() => {
     const generalOrder = ["Productivity", "Meta", "Time-of-Day", "Daily", "Weekly"];
-    const specificOrder = ["Social", "Learning", "Health", "Strength", "Trade", "Athletics"];
+    const specificOrder = ["Social", "Learning", "Health", "Strength", "Trade", "Athletics", "Journal"];
     const allTimeOrder = ["Level Ups", "Task Finisher"];
 
     const sec = {
@@ -319,7 +333,7 @@ export default function AchievementsHall({ ach }) {
       if (scope === "weekly")  { sec.general.get("Weekly").push(a); continue; }
 
       // Specific (branches)
-      if (["social","learning","health","strength","trade","athletics"].includes(t)) {
+      if (["social","learning","health","strength","trade","athletics","journal"].includes(t)) {
         const key = t.charAt(0).toUpperCase() + t.slice(1);
         if (sec.specific.has(key)) sec.specific.get(key).push(a);
         continue;
@@ -351,13 +365,53 @@ export default function AchievementsHall({ ach }) {
     : {};
 
   // ✅ Make selects compact (override global width:100%)
-  const selectStyle = { ...fieldStyle, width: "auto", minWidth: 60 };
-  const controlsWrapStyle = { display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" };
+  const baseInputStyle = {
+    padding: "8px 10px",
+    borderRadius: 10,
+    border: "1px solid var(--border)",
+    background: "var(--bg, var(--card))",
+    fontWeight: 600,
+    fontSize: 13,
+    lineHeight: 1.2,
+    height: 36,
+    minWidth: isNarrow ? 0 : 110,
+    width: isNarrow ? "100%" : undefined,
+    ...fieldStyle,
+  };
+  const selectStyle = {
+    ...baseInputStyle,
+    width: isNarrow ? "100%" : "auto",
+    minWidth: isNarrow ? 0 : 90,
+    paddingRight: 24,
+  };
+  const controlsWrapStyle = {
+    display: "flex",
+    gap: isNarrow ? 10 : 8,
+    flexWrap: "wrap",
+    alignItems: isNarrow ? "stretch" : "center",
+    justifyContent: isNarrow ? "flex-start" : "flex-end",
+    padding: isNarrow ? 8 : 4,
+    borderRadius: 12,
+    border: "1px solid var(--border)",
+    background: "var(--card)",
+    width: "100%",
+  };
+  const headerBarStyle = {
+    display: "grid",
+    gridTemplateColumns: isNarrow ? "1fr" : "auto 1fr",
+    alignItems: isNarrow ? "start" : "center",
+    gap: isNarrow ? 10 : 12,
+    padding: "10px 12px",
+    border: "1px solid var(--border)",
+    borderRadius: 14,
+    background: "var(--card)",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+  };
 
   return (
-    <div className="card" style={{ display: "grid", gap: 12 }}>
+    <div className="card achievements-hall" style={{ display: "grid", gap: 12 }}>
       {/* Header + Controls */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <div style={headerBarStyle}>
         <div style={{ display: "grid", gap: 4 }}>
           <h2 style={{ margin: 0 }}>Achievements Hall</h2>
           <div className="hint">{totalUnlocked} unlocked / {totalAll} total</div>
@@ -368,7 +422,7 @@ export default function AchievementsHall({ ach }) {
             placeholder="Search trophies."
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            style={{ minWidth: 60 }}
+            style={baseInputStyle}
             aria-label="Search trophies"
           />
           <select
@@ -385,6 +439,7 @@ export default function AchievementsHall({ ach }) {
             <option value="strength">Strength</option>
             <option value="trade">Trade</option>
             <option value="athletics">Athletics</option>
+            <option value="journal">Journal</option>
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
             <option value="evergreen">All-Time</option>
@@ -401,7 +456,20 @@ export default function AchievementsHall({ ach }) {
             <option value="recent">Sort: Recent</option>
             <option value="alpha">Sort: A–Z</option>
           </select>
-          <label className="hint" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label
+            className="hint"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 8px",
+              borderRadius: 10,
+              border: "1px solid var(--border)",
+              fontSize: 12,
+              fontWeight: 600,
+              width: isNarrow ? "100%" : "auto",
+            }}
+          >
             <input
               type="checkbox"
               checked={showLocked}
@@ -419,7 +487,7 @@ export default function AchievementsHall({ ach }) {
         <section key={k} className="sf-card" style={{ borderRadius: 14 }}>
           <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <h3 style={{ margin: 0 }}>{k}</h3>
-            <span className="hint">
+            <span className="hint" style={{ fontSize: 13, fontWeight: 600 }}>
               {sections.general.get(k)?.length || 0} {showLocked ? "shown" : "unlocked"}
             </span>
           </header>
@@ -437,7 +505,7 @@ export default function AchievementsHall({ ach }) {
         <section key={k} className="sf-card" style={{ borderRadius: 14 }}>
           <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <h3 style={{ margin: 0 }}>{k}</h3>
-            <span className="hint">
+            <span className="hint" style={{ fontSize: 13, fontWeight: 600 }}>
               {sections.specific.get(k)?.length || 0} {showLocked ? "shown" : "unlocked"}
             </span>
           </header>
@@ -455,7 +523,7 @@ export default function AchievementsHall({ ach }) {
         <section key={k} className="sf-card" style={{ borderRadius: 14 }}>
           <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
             <h3 style={{ margin: 0 }}>{k}</h3>
-            <span className="hint">
+            <span className="hint" style={{ fontSize: 13, fontWeight: 600 }}>
               {sections.alltime.get(k)?.length || 0} {showLocked ? "shown" : "unlocked"}
             </span>
           </header>

@@ -5,9 +5,47 @@
 // ─────────────────────────────────────────────────────────────
 
 import { ACH_CATALOG } from "./achievements.catalog.js";
+import { getJSON as getJSONu } from "./userLocal.js";
 import { summarize, meetsNeed } from "./achievements.eval.helpers.js";
 import { todayISO, weekKeyOf, resetDailyAchievements, resetWeeklyAchievements } from "./achievements.helpers.js";
 import { unlockBranchByProfileCounters, TYPE_TO_BRANCH } from "./achievements.branches.js";
+
+// ---------- Journal helpers ----------
+function loadJournalEntriesMap() {
+  try { return getJSONu("qj_journal_entries_v1", {}); } catch { return {}; }
+}
+function countWords(text) {
+  try {
+    if (!text || typeof text !== "string") return 0;
+    const m = text.trim().match(/\S+/g);
+    return Array.isArray(m) ? m.length : 0;
+  } catch { return 0; }
+}
+function computeJournalMetrics(maxStreakDays = 60) {
+  const map = loadJournalEntriesMap();
+  const ids = Object.keys(map || {});
+  // total words (all time)
+  let totalWords = 0;
+  for (const id of ids) {
+    const e = map[id];
+    totalWords += countWords(e?.text || "");
+  }
+
+  // current streak (consecutive days ending today)
+  let streak = 0;
+  const now = new Date();
+  for (let i = 0; i < maxStreakDays; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const iso = d.toISOString().slice(0, 10); // YYYY-MM-DD (UTC aligned like todayISO)
+    const key = iso.split("-").join(""); // id format: yyyymmdd (avoid replaceAll for compat)
+    const entry = map[key];
+    const hasText = !!((entry?.text || "").trim());
+    const hasTitle = !!((entry?.title || "").trim());
+    if (entry && (hasText || hasTitle)) streak++; else break;
+  }
+  return { streakDays: streak, totalWords };
+}
 
 // شمارش روزهای متوالی با حداقل n تسک در روز (برای Meta streak)
 function countConsecutiveDays(minTasksPerDay = 3, maxDays = 30) {
@@ -18,7 +56,7 @@ function countConsecutiveDays(minTasksPerDay = 3, maxDays = 30) {
     d.setDate(d.getDate() - i);
     const iso = d.toISOString().slice(0, 10);
     const key = `qj_stats_today_${iso}`;
-    const stats = JSON.parse(localStorage.getItem(key) || "null");
+    const stats = getJSONu(key, null);
     if (stats && Number(stats.doneTasks || 0) >= minTasksPerDay) streak++;
     else break;
   }
@@ -146,11 +184,23 @@ export function evaluateAchievements(ctx, prev, awardFn) {
   if (streak >= 7)  unlockById("streak_7");
   if (streak >= 10) unlockById("streak_10");
 
+  // • Journal achievements (life): streak and total words
+  try {
+    const jm = computeJournalMetrics(120);
+    if (jm.streakDays >= 1)  unlockById("jr_streak_1");
+    if (jm.streakDays >= 2)  unlockById("jr_streak_2");
+    if (jm.streakDays >= 5)  unlockById("jr_streak_5");
+    if (jm.streakDays >= 7)  unlockById("jr_streak_7");
+    if (jm.streakDays >= 14) unlockById("jr_streak_14");
+    if (jm.totalWords >= 10000) unlockById("jr_words_10k");
+    if (jm.totalWords >= 20000) unlockById("jr_words_20k");
+  } catch {}
+
   // ۴) Ephemeral daily/weekly
   function readTodayBranchCounts() {
     try {
       const key = `qj_stats_today_${todayISO()}`;
-      const stats = JSON.parse(localStorage.getItem(key) || "null") || {};
+      const stats = getJSONu(key, null) || {};
       return stats.doneByBranch || {};
     } catch { return {}; }
   }

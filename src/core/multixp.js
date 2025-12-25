@@ -3,6 +3,7 @@
 
 import { PERK_RULES } from "./perkRules.data.js";
 import { emitChange } from "../sync/repos.js";
+import { getItem as getItemU, setItem as setItemU } from "./userLocal.js";
 
 export const XP_TYPES = ["WISDOM", "HEALTH", "STRENGTH", "SOCIAL", "TRADE", "ATHLETICS"];
 export const XP_META = {
@@ -14,8 +15,8 @@ export const XP_META = {
   ATHLETICS: { color: "#10b981", icon: "🏃‍♂️" },
 };
 
-const LS_KEY = "qj_multi_xp_v1";
-const LEGACY_KEY = "qj_multixp_state_v1";
+const LS_KEY = "qj_multi_xp_v1";           // per-user via userLocal
+const LEGACY_KEY = "qj_multixp_state_v1";   // legacy (non-namespaced)
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
 export function xpNeededForLevel(level) { return 50 * level * level; }
@@ -46,15 +47,16 @@ export function loadMultiXP() {
   try {
     // migrate legacy once
     try {
-      const legacyRaw = localStorage.getItem(LEGACY_KEY);
-      if (legacyRaw && !localStorage.getItem(LS_KEY)) {
+      const legacyRaw = (typeof localStorage !== "undefined") ? localStorage.getItem(LEGACY_KEY) : null;
+      const existing = getItemU(LS_KEY);
+      if (legacyRaw && !existing) {
         const legacy = JSON.parse(legacyRaw);
         const migrated = { ...blankState(), ...(legacy || {}) };
-        localStorage.setItem(LS_KEY, JSON.stringify(migrated));
-        localStorage.removeItem(LEGACY_KEY);
+        setItemU(LS_KEY, JSON.stringify(migrated));
+        try { localStorage.removeItem(LEGACY_KEY); } catch {}
       }
     } catch {}
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = getItemU(LS_KEY);
     if (!raw) return blankState();
     const s = JSON.parse(raw);
     return { ...blankState(), ...s, xp: { ...blankState().xp, ...(s.xp || {}) } };
@@ -62,7 +64,7 @@ export function loadMultiXP() {
 }
 
 export function saveMultiXP(s) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch {}
+  try { setItemU(LS_KEY, JSON.stringify(s)); } catch {}
   // Notify sync layer so other devices get updates immediately
   try { emitChange(); } catch {}
 }

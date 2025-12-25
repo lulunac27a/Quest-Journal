@@ -2,6 +2,8 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useMusic } from "../ctx/MusicContext";
 import { addLinkToQueue } from "./GlobalPlayer";
+import SocialPanel from "./SocialPanel.jsx";
+import SocialLeaderboards from "./SocialLeaderboards.jsx";
 
 export default function MusicTab({ level = 1 }) {
   const m = useMusic();
@@ -97,152 +99,184 @@ export default function MusicTab({ level = 1 }) {
   }
 
   return (
-    <div style={{ padding: 16 }}>
+    <div className="card tavern-page music-tab">
       <h2 style={{ marginTop: 0 }}>Tavern 🍻</h2>
 
       {/* ریسپانسیو: دیگه اندازهٔ ستون‌ها ثابت نیست */}
       <div className="tavern-grid">
-        {/* Left: Daily Book */}
-        <aside className="sf-card" style={{ minHeight: 220 }}>
-          <h3 style={{ marginTop: 0 }}>📖 Daily Book</h3>
-          <div className="hint" style={{ marginTop: 6 }}>coming soon</div>
-        </aside>
+        <div className="tavern-col tavern-col-left">
+          <aside className="sf-card tavern-daily" style={{ minHeight: 220 }}>
+            <h3 style={{ marginTop: 0 }}>Daily Book</h3>
+            <div className="hint" style={{ marginTop: 6 }}>coming soon</div>
+          </aside>
 
-        {/* Center: queue & inputs */}
-        <section>
-          <section style={{ marginBottom: 16 }}>
-            <h3 style={{ margin: 0 }}>Queue</h3>
-            <ul style={{ marginTop: 8, paddingLeft: 0 }}>
-              {m.queue.length === 0 && <div className="hint">Empty queue.</div>}
-              {m.queue.map((it, i) => (
-                <li
-                  key={it.id}
-                  draggable
-                  onDragStart={() => setDragIdx(i)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => {
-                    if (dragIdx != null && dragIdx !== i) m.reorder(dragIdx, i);
-                    setDragIdx(null);
-                  }}
-                  onDragEnd={() => setDragIdx(null)}
-                  style={{
-                    listStyle: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    marginBottom: 6,
-                    border: dragIdx === i ? "1px dashed var(--border)" : "1px solid transparent",
-                    borderRadius: 6,
-                    padding: 4,
-                  }}
-                >
-                  <button className="btn" onClick={() => m.jump(i)} style={{ padding: "4px 8px" }}>
-                    {i === m.index ? "▶" : i + 1}
-                  </button>
-                  <span style={{ fontSize: 14, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {it.title} <span className="hint">({it.type})</span>
-                  </span>
-                  <button className="btn" onClick={() => m.removeAt(i)}>✕</button>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <aside className="sf-card tavern-leaderboards" style={{ minHeight: 220 }}>
+            <h3 style={{ marginTop: 0 }}>Leaderboards</h3>
+            <SocialLeaderboards />
+          </aside>
+        </div>
 
-          <section style={{ display: "grid", gap: 10 }}>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <input
-                style={{ flex: 1, minWidth: 260 }}
-                placeholder="Paste link (YouTube, Spotify, SoundCloud)."
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && onAddLink()}
-              />
-              <button className="btn" onClick={onAddLink}>Add link</button>
-            </div>
-
-            <div style={{ paddingTop: 10 }}>
-              <label className="hint">Add local audio files</label>
-              <br />
-              <input
-                ref={fileRef}
-                type="file"
-                accept="audio/*"
-                multiple
-                onChange={onPickFiles}
-                style={{ display: "none" }}
-              />
-              <button
-                className="btn"
-                onClick={() => fileRef.current?.click()}
-                style={{ padding: "4px 8px", fontSize: "14px", marginTop: 10 }}
-              >
-                Choose Files
-              </button>
-              <div className="hint" style={{ marginTop: 6 }}>Local files persist for this session.</div>
-            </div>
-          </section>
-        </section>
-
-        {/* Right: curated playlists */}
-        <aside className="sf-card" style={{ minHeight: 220 }}>
-          <h3 style={{ marginTop: 0 }}>Playlists</h3>
-          <div style={{ display: "grid", gap: 12 }}>
-            {sections.map((sec) => (
-              <section key={sec.name}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                  <div className="xp-name" style={{ fontWeight: 700 }}>{sec.name}</div>
-                  <button
-                    className="icon-btn sm"
-                    title={openSections[sec.name] ? "Collapse" : "Expand"}
-                    onClick={() => setOpenSections((s) => ({ ...s, [sec.name]: !s[sec.name] }))}
-                    aria-label={openSections[sec.name] ? "Collapse section" : "Expand section"}
+        <div className="tavern-col tavern-col-mid">
+          <section className="tavern-queue-panel" style={{ minHeight: 220 }}>
+            <section style={{ marginBottom: 16 }}>
+              <h3 style={{ margin: 0 }}>Queue</h3>
+              <ul style={{ marginTop: 8, paddingLeft: 0, display: "grid", gap: 6, width: "100%", maxWidth: "100%" }}>
+                {m.queue.length === 0 && <div className="hint">Empty queue.</div>}
+                {m.queue.map((it, i) => (
+                  <li
+                    key={it.id}
+                    draggable
+                    className="tavern-queue-row"
+                    onDragStart={() => setDragIdx(i)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => {
+                      if (dragIdx != null && dragIdx !== i) m.reorder(dragIdx, i);
+                      setDragIdx(null);
+                    }}
+                    onDragEnd={() => setDragIdx(null)}
+                    style={{
+                      listStyle: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      marginBottom: 6,
+                      border: dragIdx === i ? "1px dashed var(--border)" : "1px solid transparent",
+                      borderRadius: 6,
+                      padding: 4,
+                      flexWrap: "wrap",
+                      minWidth: 0,
+                      width: "100%",
+                      maxWidth: "100%",
+                    }}
                   >
-                    {openSections[sec.name] ? "v" : ">"}
-                  </button>
-                </div>
-                {openSections[sec.name] && (sec.items.length === 0 ? (
-                  <div className="hint">Coming soon</div>
-                ) : (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {sec.items.map((pl) => {
-                      const locked = (level || 1) < (pl.unlockAt || 1);
-                      return (
-                        <div
-                          key={pl.id}
-                          onClick={() => { if (!locked) addLinkToQueue(pl.url, m, pl.title); }}
-                          role="button"
-                          aria-disabled={locked}
-                          title={locked ? `Unlocks at Lv ${pl.unlockAt}` : `Add to queue`}
-                          style={{
-                            position: "relative",
-                            padding: "10px 12px",
-                            border: "1px solid var(--border)",
-                            borderRadius: 8,
-                            background: "var(--card)",
-                            cursor: locked ? "not-allowed" : "pointer",
-                            opacity: locked ? 0.6 : 1,
-                            overflow: "hidden",
-                          }}
-                        >
-                          <div style={{ fontWeight: 600, fontSize: 14 }}>{pl.title}</div>
-                          <div className="hint" style={{ fontSize: 12 }}>{locked ? `Requires Lv ${pl.unlockAt}` : "Click to add to queue"}</div>
-                          {locked && (
-                            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "linear-gradient(to bottom right, rgba(0,0,0,0.25), rgba(0,0,0,0.15))", color: "var(--muted)", fontWeight: 700 }}>
-                              🔒 Lv {pl.unlockAt}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                    <button className="btn" onClick={() => m.jump(i)} style={{ padding: "4px 8px" }}>
+                      {i === m.index ? "▶" : i + 1}
+                    </button>
+                    <span className="queue-title" style={{ fontSize: 14, flex: 1, minWidth: 0 }} title={it.title}>
+                      {it.title} <span className="hint">({it.type})</span>
+                    </span>
+                    <button className="btn" title="Remove from queue" onClick={() => m.removeAt(i)}>✕</button>
+                  </li>
                 ))}
-              </section>
-            ))}
-          </div>
-        </aside>
-      </div>
+              </ul>
+            </section>
 
-      {/* Toast */}
+            <section style={{ display: "grid", gap: 10 }}>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input
+                  style={{ flex: 1, minWidth: 200, fontSize: 12 }}
+                  placeholder="Paste link (YouTube, Spotify, SoundCloud)."
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && onAddLink()}
+                />
+                <button className="btn" onClick={onAddLink}>Add link</button>
+              </div>
+
+              <div style={{ paddingTop: 10 }}>
+                <label className="hint">Add local audio files</label>
+                <br />
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="audio/*"
+                  multiple
+                  onChange={onPickFiles}
+                  style={{ display: "none" }}
+                />
+                <button
+                  className="btn"
+                  onClick={() => fileRef.current?.click()}
+                  style={{ padding: "4px 8px", fontSize: "14px", marginTop: 10 }}
+                >
+                  Choose Files
+                </button>
+              </div>
+            </section>
+          </section>
+
+          <section style={{ marginTop: 0 }}>
+            <div className="sf-card" style={{ padding: 12 }}>
+              <h3 style={{ marginTop: 0 }}>Social</h3>
+              <SocialPanel onToast={setToast} />
+            </div>
+          </section>
+        </div>
+
+        <div className="tavern-col tavern-col-right">
+          <aside className="sf-card tavern-playlists" style={{ minHeight: 220 }}>
+            <h3 style={{ marginTop: 0 }}>Playlists</h3>
+            <div style={{ display: "grid", gap: 12 }}>
+              {sections.map((sec) => (
+                <section key={sec.name}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <div className="xp-name" style={{ fontWeight: 700 }}>{sec.name}</div>
+                    <button
+                      className="icon-btn sm"
+                      title={openSections[sec.name] ? "Collapse" : "Expand"}
+                      onClick={() => setOpenSections((s) => ({ ...s, [sec.name]: !s[sec.name] }))}
+                      aria-label={openSections[sec.name] ? "Collapse section" : "Expand section"}
+                    >
+                      {openSections[sec.name] ? "v" : ">"}
+                    </button>
+                  </div>
+                  {openSections[sec.name] && (sec.items.length === 0 ? (
+                    <div className="hint">Coming soon</div>
+                  ) : (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {sec.items.map((pl) => {
+                        const locked = (level || 1) < (pl.unlockAt || 1);
+                        return (
+                          <div
+                            key={pl.id}
+                            onClick={() => { if (!locked) addLinkToQueue(pl.url, m, pl.title); }}
+                            role="button"
+                            aria-disabled={locked}
+                            title={locked ? `Unlocks at Lv ${pl.unlockAt}` : `Add to queue`}
+                            style={{
+                              position: "relative",
+                              padding: "10px 12px",
+                              border: "1px solid var(--border)",
+                              borderRadius: 8,
+                              background: "var(--card)",
+                              cursor: locked ? "not-allowed" : "pointer",
+                              opacity: locked ? 0.6 : 1,
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div style={{ fontWeight: 600, fontSize: 14 }}>{pl.title}</div>
+                            <div className="hint" style={{ fontSize: 12 }}>{locked ? `Requires Lv ${pl.unlockAt}` : "Click to add to queue"}</div>
+                            {locked && (
+                              <div
+                                style={{
+                                  position: "absolute",
+                                  inset: 0,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  background: "linear-gradient(to bottom right, rgba(0,0,0,0.25), rgba(0,0,0,0.15))",
+                                  color: "var(--muted)",
+                                  fontWeight: 700,
+                                  gap: 6,
+                                }}
+                              >
+                                <span aria-hidden role="img">🔒</span>
+                                <span>Lv {pl.unlockAt}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </section>
+              ))}
+            </div>
+          </aside>
+        </div>
+
+      </div>
+{/* Toast */}
       {toast && (
         <>
           <style>{`
@@ -312,3 +346,5 @@ export default function MusicTab({ level = 1 }) {
     </div>
   );
 }
+
+

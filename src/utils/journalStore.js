@@ -1,34 +1,47 @@
 // ذخیره‌سازی جورنال: متن/متادیتا در localStorage، تصویر در IndexedDB
-const LSK = "qj_journal_entries_v1";
-const DB_NAME = "qj_journal_db";
+import { getJSON as getJSONu, setJSON as setJSONu, namespacedKey } from "../core/userLocal.js";
+
+const LSK = "qj_journal_entries_v1"; // per-user via userLocal
+const BASE_DB_NAME = "qj_journal_db";
+function currentDBName() {
+  // Derive DB name from namespacedKey to isolate per-user blobs
+  const scoped = namespacedKey(BASE_DB_NAME);
+  return scoped === BASE_DB_NAME ? BASE_DB_NAME : scoped.replaceAll(":", "_");
+}
 const STORE = "images";
 
 // ---------- LocalStorage: entries ----------
 export function loadEntry(id) {
   try {
-    const map = JSON.parse(localStorage.getItem(LSK) || "{}");
+    const map = getJSONu(LSK, {});
     return map[id] || null;
   } catch { return null; }
+}
+export function loadAllEntries() {
+  try { return getJSONu(LSK, {}) || {}; } catch { return {}; }
+}
+export function saveAllEntries(map) {
+  try { setJSONu(LSK, map || {}); } catch {}
 }
 export function saveEntry(entry) {
   const { id } = entry || {};
   if (!id) return;
-  const map = JSON.parse(localStorage.getItem(LSK) || "{}");
+  const map = getJSONu(LSK, {});
   map[id] = entry;
-  localStorage.setItem(LSK, JSON.stringify(map));
+  setJSONu(LSK, map);
 }
 export function listRecent(n = 10) {
   try {
-    const map = JSON.parse(localStorage.getItem(LSK) || "{}");
+    const map = getJSONu(LSK, {});
     const arr = Object.values(map).sort((a,b)=> (b.dateISO||"").localeCompare(a.dateISO||""));
-    return arr.slice(0, n).map(e => ({ id: e.id, dateISO: e.dateISO, thumb: e.thumb || null }));
+    return arr.slice(0, n).map(e => ({ id: e.id, dateISO: e.dateISO, thumb: e.thumb || null, title: e.title || "" }));
   } catch { return []; }
 }
 
 // ---------- IndexedDB: small wrapper ----------
 function withStore(mode, fn) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
+    const req = indexedDB.open(currentDBName(), 1);
     req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE);
@@ -80,6 +93,18 @@ export async function getImageURL(id) {
   const blob = await idbGet(id);
   if (!blob) return null;
   return URL.createObjectURL(blob);
+}
+
+export async function deleteJournalDB() {
+  try {
+    const name = currentDBName();
+    const req = indexedDB.deleteDatabase(name);
+    await new Promise((resolve) => {
+      req.onsuccess = () => resolve();
+      req.onerror = () => resolve();
+      req.onblocked = () => resolve();
+    });
+  } catch {}
 }
 
 // کوچک‌کننده‌ی DataURL برای thumbnail

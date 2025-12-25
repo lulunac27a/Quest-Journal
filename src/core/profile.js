@@ -1,6 +1,7 @@
 // src/core/profile.js
 // Atomic profile storage + migration from older scattered keys.
 import { emitChange } from "../sync/repos.js";
+import { getJSON as getJSONu, setJSON as setJSONu, removeItem as removeItemu } from "./userLocal.js";
 
 const PROFILE_KEY = "qj_profile_v1";
 
@@ -69,25 +70,18 @@ export function mergeDefaults(p) {
  */
 export function loadProfile() {
   try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    if (!raw) return defaultProfile("normal");
-    const parsed = JSON.parse(raw);
+    const parsed = getJSONu(PROFILE_KEY, null);
+    if (!parsed) return defaultProfile("normal");
     return mergeDefaults(parsed);
-  } catch {
-    return defaultProfile("normal");
-  }
+  } catch { return defaultProfile("normal"); }
 }
 
 /**
  * Save a profile atomically to localStorage.
  */
 export function saveProfile(p) {
-  try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
-    try { emitChange(); } catch {}
-  } catch {
-    // noop
-  }
+  try { setJSONu(PROFILE_KEY, p); try { emitChange(); } catch {} }
+  catch { /* noop */ }
 }
 
 /**
@@ -95,17 +89,13 @@ export function saveProfile(p) {
  * NOTE: This does not remove legacy scattered keys.
  */
 export function clearProfileStorage() {
-  try {
-    localStorage.removeItem(PROFILE_KEY);
-  } catch {
-    // noop
-  }
+  try { removeItemu(PROFILE_KEY); } catch { /* noop */ }
 }
 
 /** One-time migration from legacy scattered keys into atomic profile */
 export function migrateProfileFromLegacy() {
   try {
-    const existing = localStorage.getItem(PROFILE_KEY);
+    const existing = (()=>{ try { return getJSONu(PROFILE_KEY, null) ? "1" : null; } catch { return null; } })();
     if (existing) return; // already migrated
 
     const prof = defaultProfile("normal");
@@ -120,7 +110,7 @@ export function migrateProfileFromLegacy() {
     }
 
     // perks
-    const pr = localStorage.getItem(LEGACY.perks);
+    const pr = (typeof localStorage !== "undefined") ? localStorage.getItem(LEGACY.perks) : null;
     if (pr) {
       try {
         prof.perks.owned = Array.isArray(JSON.parse(pr)) ? JSON.parse(pr) : [];
@@ -128,7 +118,7 @@ export function migrateProfileFromLegacy() {
     }
 
     // events
-    const ev = localStorage.getItem(LEGACY.seen);
+    const ev = (typeof localStorage !== "undefined") ? localStorage.getItem(LEGACY.seen) : null;
     if (ev) {
       try {
         const sv = JSON.parse(ev);

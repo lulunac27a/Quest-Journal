@@ -22,6 +22,7 @@ export default function LottieLayer({
 }) {
   const hostRef = useRef(null);
   const playerRef = useRef(null);
+  const shouldPlayRef = useRef(false);
   const [ready, setReady] = useState(false);
 
   // بارگذاری وب‌کامپوننت dotlottie-player (فقط یک‌بار در کل اپ)
@@ -72,6 +73,7 @@ export default function LottieLayer({
 
     // اگر reduced-motion روشن است اما می‌خواهیم نادیده بگیریم
     const shouldAutoplay = ignoreReducedMotion ? autoplay : (reduce ? false : autoplay);
+    shouldPlayRef.current = shouldAutoplay;
     if (shouldAutoplay) player.setAttribute("autoplay", "");
     else player.removeAttribute("autoplay");
 
@@ -84,6 +86,18 @@ export default function LottieLayer({
       return () => clearTimeout(t);
     }
   }, [src, speed, loop, autoplay, ready, reduce, ignoreReducedMotion]);
+
+  // Pause when tab hidden, resume if autoplay intended
+  useEffect(() => {
+    const onVis = () => {
+      const player = playerRef.current;
+      if (!player) return;
+      if (document.hidden) player.pause?.();
+      else if (shouldPlayRef.current) player.play?.();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
 
   return (
     <div

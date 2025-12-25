@@ -1,8 +1,24 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "hosting": {
     "site": "quest-journal-aa356",
     "public": "dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "**/*.exe",
+      "**/*.dll",
+      "**/*.node",
+      "**/*.dylib",
+      "**/*.so",
+      "**/*.bin",
+      "**/win-unpacked/**",
+      "**/mac/**",
+      "**/linux/**"
+    ],
     "rewrites": [{ "source": "**", "destination": "/index.html" }],
     "headers": [
       { "source": "/index.html", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
