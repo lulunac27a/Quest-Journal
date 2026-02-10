@@ -7,7 +7,7 @@ export default function ChallengeManager({ label, templates, onAdd, onRemove, de
   const add = () => {
     const t = title.trim();
     if (!t) return;
-    const n = xp === "" ? undefined : Math.max(0, Math.floor(Number(xp) || 0));
+    const n = xp === "" ? undefined : Math.max(0, Math.min(1000, Math.floor(Number(xp) || 0)));
     onAdd(t, n);
     setTitle("");
     setXp("");
